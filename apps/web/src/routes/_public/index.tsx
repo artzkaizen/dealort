@@ -113,7 +113,7 @@ function HomeComponent() {
             </motion.div>
           </div>
 
-          <div className="flex max-sm:mt-[2%] lg:mt-[-80px]">
+          <div className="flex max-sm:mt-[10%] lg:mt-[-80px]">
             <motion.img
               alt="Dashboard screenshot"
               className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] relative left-[2%] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
