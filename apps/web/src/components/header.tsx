@@ -21,9 +21,9 @@ export function Header() {
         "border-b": !isOpen,
       })}
     >
-      <div className="flex flex-row items-center justify-evenly">
-        <nav className="relative flex w-full items-center justify-evenly gap-4 px-2 py-3 sm:px-4">
-          <Link className="grow" to="/">
+      <div className="flex flex-row items-center justify-between">
+        <nav className="relative flex w-full items-center justify-evenly gap-4 px-[50px] py-3 sm:px-4">
+          <Link className="" to="/">
             <img
               alt="Logo"
               className="h-5 invert dark:invert-0"
@@ -35,7 +35,7 @@ export function Header() {
 
           <div
             className={cn(
-              "flex grow items-center gap-3 transition-[height] duration-1000 ease-in-out max-sm:absolute max-sm:top-14 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:flex-col max-sm:overflow-y-hidden max-sm:border-bottom max-sm:bg-background/60 max-sm:backdrop-blur-lg",
+              "flex items-center justify-between gap-3 transition-[height] duration-1000 ease-in-out max-sm:absolute max-sm:top-14 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:flex-col max-sm:overflow-y-hidden max-sm:border-bottom max-sm:bg-background/60 max-sm:backdrop-blur-lg",
               { "max-sm:h-auto": isOpen, "max-sm:h-0": !isOpen }
             )}
           >

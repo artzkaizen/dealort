@@ -68,7 +68,7 @@ function HomeComponent() {
         className="min-h-screen"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(200, 200, 200, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 200, 200, 0.15) 1px, transparent 1px)",
+            "linear-gradient(rgba(200, 200, 200, 0.1) 3px, transparent 3px), linear-gradient(90deg, rgba(200, 200, 200, 0.15) 1px, transparent 1px)",
           backgroundSize: "90px 150px",
         }}
       >
@@ -145,7 +145,7 @@ function HomeComponent() {
         className="mb-10 flex flex-col items-center justify-center"
         id="waitlist"
       >
-        <div className="flex w-fit items-center justify-center gap-1 overflow-hidden border-t border-b-1 bg-background px-10 pt-10">
+        <div className="flex w-fit items-center justify-center gap-1 overflow-hidden border-t border-b bg-background px-10 pt-10">
           <RollingCubeFeature />
         </div>
 
