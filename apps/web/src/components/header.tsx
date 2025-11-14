@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Button } from "./ui/button";
-import { useState } from "react";
 import { MenuIcon, X } from "lucide-react";
+import { motion, useScroll } from "motion/react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useScroll, motion } from "motion/react";
+import { Button } from "./ui/button";
 
-export default function Header() {
+export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { scrollYProgress } = useScroll();
 
@@ -17,21 +17,29 @@ export default function Header() {
 
   return (
     <div
-      className={cn("sticky top-0 z-50 bg-background/60 backdrop-blur-sm", { "border-b": !isOpen })}
+      className={cn("sticky top-0 z-50 bg-background/60 backdrop-blur-sm", {
+        "border-b": !isOpen,
+      })}
     >
       <div className="flex flex-row items-center justify-between">
-        <nav className="relative flex justify-between items-center w-full gap-4 px-2 sm:px-4 py-3">
-          <Link to="/" className="grow">
-            <img src="/logo.svg" alt="Logo" className="h-5 invert" />
+        <nav className="relative flex w-full items-center justify-between gap-4 px-2 py-3 sm:px-4">
+          <Link className="grow" to="/">
+            <img
+              alt="Logo"
+              className="h-5 invert dark:invert-0"
+              height={24}
+              src="/logo.svg"
+              width={100}
+            />
           </Link>
 
           <div
             className={cn(
-              "grow flex items-center gap-3 max-sm:absolute max-sm:top-14 max-sm:left-0 max-sm:right-0 max-sm:flex-col max-sm:w-full max-sm:bg-background/60 max-sm:backdrop-blur-lg max-sm:border-bottom max-sm:overflow-y-hidden ease-in-out duration-1000 transition-[height]",
-              { "max-sm:h-auto": isOpen, "max-sm:h-0": !isOpen },
+              "flex grow items-center gap-3 transition-[height] duration-1000 ease-in-out max-sm:absolute max-sm:top-14 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:flex-col max-sm:overflow-y-hidden max-sm:border-bottom max-sm:bg-background/60 max-sm:backdrop-blur-lg",
+              { "max-sm:h-auto": isOpen, "max-sm:h-0": !isOpen }
             )}
           >
-            <div className="grow flex gap-3 max-sm:flex-col">
+            <div className="flex grow gap-3 max-sm:flex-col">
               {links.map(({ to, label }) => (
                 <Link key={to} to={to}>
                   {label}
@@ -41,7 +49,7 @@ export default function Header() {
 
             <div className="flex gap-2 max-sm:pb-5">
               <Button asChild>
-                <a href="#waitlist" className="text-xs">
+                <a className="text-xs" href="#waitlist">
                   Join Waitlist
                 </a>
               </Button>
@@ -50,15 +58,15 @@ export default function Header() {
 
           <Button
             className={cn(
-              " sm:hidden relative flex items-center justify-center w-10 h-10 transition-colors duration-200",
-              isOpen ? "bg-muted/60" : "",
+              "relative flex h-10 w-10 items-center justify-center transition-colors duration-200 sm:hidden",
+              isOpen ? "bg-muted/60" : ""
             )}
-            variant={"outline"}
             onClick={() => setIsOpen((prev) => !prev)}
+            variant={"outline"}
           >
             <span
-              className="absolute left-0 right-0 mx-auto flex items-center justify-center transition-all duration-300 ease-in-out"
               aria-hidden={!isOpen}
+              className="absolute right-0 left-0 mx-auto flex items-center justify-center transition-all duration-300 ease-in-out"
               style={{
                 opacity: isOpen ? 1 : 0,
                 transform: isOpen ? "scale(1)" : "scale(0.7)",
@@ -67,14 +75,16 @@ export default function Header() {
             >
               <X
                 className={cn(
-                  "w-5 h-5 pointer-events-none transition-all duration-300",
-                  isOpen ? "opacity-100 scale-100" : "opacity-0 scale-75 absolute",
+                  "pointer-events-none h-5 w-5 transition-all duration-300",
+                  isOpen
+                    ? "scale-100 opacity-100"
+                    : "absolute scale-75 opacity-0"
                 )}
               />
             </span>
             <span
-              className="absolute left-0 right-0 mx-auto flex items-center justify-center transition-all duration-300 ease-in-out"
               aria-hidden={isOpen}
+              className="absolute right-0 left-0 mx-auto flex items-center justify-center transition-all duration-300 ease-in-out"
               style={{
                 opacity: isOpen ? 0 : 1,
                 transform: isOpen ? "scale(0.7)" : "scale(1)",
@@ -83,20 +93,24 @@ export default function Header() {
             >
               <MenuIcon
                 className={cn(
-                  "w-5 h-5 pointer-events-none transition-all duration-300",
-                  isOpen ? "opacity-0 scale-75 absolute" : "opacity-100 scale-100",
+                  "pointer-events-none h-5 w-5 transition-all duration-300",
+                  isOpen
+                    ? "absolute scale-75 opacity-0"
+                    : "scale-100 opacity-100"
                 )}
               />
             </span>
-            <span className="sr-only">{isOpen ? "Close menu" : "Open menu"}</span>
+            <span className="sr-only">
+              {isOpen ? "Close menu" : "Open menu"}
+            </span>
           </Button>
         </nav>
       </div>
 
       {!isOpen && (
         <motion.div
+          className="flex h-px items-start justify-start bg-foreground"
           style={{ scaleX: scrollYProgress }}
-          className="bg-foreground h-px flex justify-start items-start  "
         />
       )}
     </div>

@@ -72,7 +72,7 @@ function HomeComponent() {
         }}
       >
         <div className="flex h-full items-center overflow-hidden">
-          <div className="max-md: mt-24 flex min-w-[35%] flex-col gap-2 px-4">
+          <div className="max-md: mt-24 ml-4 flex min-w-[35%] flex-col gap-2 px-6">
             <AnimatePresence>
               <motion.h1
                 className="max-w-md text-5xl md:text-6xl"
@@ -120,33 +120,13 @@ function HomeComponent() {
             <motion.img
               alt="Dashboard screenshot"
               className="transform-[perspective(10px)_rotateY(-0.4deg)_skewY(1deg)_scale(0.75)] relative rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)] max-md:hidden"
-              height={100}
               initial={{ right: -300 }}
               src={DashboardImage}
               transition={{ type: "spring", duration: 2 }}
               whileInView={{ right: 0 }}
-              width={100}
             />
           </AnimatePresence>
         </div>
-
-        {/* <div className="grid gap-6">
-          <section className="rounded-lg border p-4">
-            <h2 className="mb-2 font-medium">API Status</h2>
-            <div className="flex items-center gap-2">
-              <div
-                className={`h-2 w-2 rounded-full ${healthCheck.data ? "bg-green-500" : "bg-red-500"}`}
-              />
-              <span className="text-muted-foreground text-sm">
-                {healthCheck.isLoading
-                  ? "Checking..."
-                  : healthCheck.data
-                    ? "Connected"
-                    : "Disconnected"}
-              </span>
-            </div>
-          </section>
-        </div> */}
       </section>
 
       <section
