@@ -35,15 +35,17 @@ export function Header() {
 
           <div
             className={cn(
-              "flex items-center justify-between gap-3 transition-[height] duration-1000 ease-in-out max-sm:absolute max-sm:top-14 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:flex-col max-sm:overflow-y-hidden max-sm:border-bottom max-sm:bg-background/60 max-sm:backdrop-blur-lg",
-              { "max-sm:h-auto": isOpen, "max-sm:h-0": !isOpen }
+              "flex items-center gap-7 transition-[height] duration-1000 ease-in-out max-sm:absolute max-sm:top-14 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:flex-col max-sm:overflow-y-hidden max-sm:border-bottom max-sm:bg-background/60 max-sm:backdrop-blur-lg sm:justify-between sm:gap-3",
+              { "max-sm:h-[calc(100vh-56px)]": isOpen, "max-sm:h-0": !isOpen }
             )}
           >
-            <div className="flex gap-3 max-sm:flex-col sm:border-r sm:pr-3">
+            <div className="flex gap-4 max-sm:flex-col sm:gap-3 sm:border-r sm:pr-3">
               {links.map(({ to, label }) => (
                 <Link
-                  activeProps={{ className: "scale-105 text-foreground" }}
-                  className="text-foreground/70 transition-transform hover:scale-105"
+                  activeProps={{
+                    className: "scale-105 text-foreground opacity-100",
+                  }}
+                  className="opacity-80 transition-transform hover:scale-105"
                   key={to}
                   to={to}
                 >
