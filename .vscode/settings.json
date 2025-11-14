@@ -39,5 +39,7 @@
     "orpc",
     "waitlist"
   ],
+  "tailwindCSS.experimental.configFile": "apps/web/src/index.css",
+
   "files.autoSave": "afterDelay"
 }

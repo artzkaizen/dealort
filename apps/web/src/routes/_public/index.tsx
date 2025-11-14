@@ -73,59 +73,55 @@ function HomeComponent() {
       >
         <div className="flex h-full items-center overflow-hidden">
           <div className="max-md: mt-24 ml-4 flex min-w-[35%] flex-col gap-2 px-6">
-            <AnimatePresence>
-              <motion.h1
-                className="max-w-md text-5xl md:text-6xl"
-                initial={{ y: -100 }}
-                transition={{ type: "spring", duration: 0.7 }}
-                whileInView={{ y: 0 }}
-              >
-                The Best Launchpad For Your Start up
-              </motion.h1>
-            </AnimatePresence>
+            <motion.h1
+              className="max-w-md text-5xl md:text-6xl"
+              initial={{ y: -100 }}
+              transition={{ type: "spring", duration: 0.7 }}
+              viewport={{ once: true }}
+              whileInView={{ y: 0 }}
+            >
+              The Best Launchpad For Your Start up
+            </motion.h1>
 
-            <AnimatePresence>
-              <motion.p
-                className="max-w-ms text-foreground/50 max-md:text-sm"
-                initial={{ x: -100 }}
-                transition={{ type: "spring", duration: 0.8 }}
-                whileInView={{ x: 0 }}
-              >
-                A Virtual Data Room (VDR) that transforms promising startups
-                into proven, investment-ready opportunities..
-              </motion.p>
-            </AnimatePresence>
+            <motion.p
+              className="max-w-ms text-foreground/50 max-md:text-sm"
+              initial={{ x: -100 }}
+              transition={{ type: "spring", duration: 0.8 }}
+              viewport={{ once: true }}
+              whileInView={{ x: 0 }}
+            >
+              A Virtual Data Room (VDR) that transforms promising startups into
+              proven, investment-ready opportunities..
+            </motion.p>
 
-            <AnimatePresence>
-              <motion.div
-                className="mt-3 flex gap-1"
-                // initial={{ y: 100 }}
-                // whileInView={{ y: 0 }}
-                // transition={{ type: "spring", duration: 0.8 }}
-                // viewport={{ once: true }}
-              >
-                <Button asChild>
-                  <a href="#waitlist">Join Waitlist</a>
-                </Button>
-                <Button asChild variant={"ghost"}>
-                  <Link to="/products">
-                    View Products <StoreIcon />
-                  </Link>
-                </Button>
-              </motion.div>
-            </AnimatePresence>
+            <motion.div
+              className="mt-3 flex gap-1"
+              // initial={{ y: 100 }}
+              // whileInView={{ y: 0 }}
+              // transition={{ type: "spring", duration: 0.8 }}
+
+              viewport={{ once: true }}
+            >
+              <Button asChild>
+                <a href="#waitlist">Join Waitlist</a>
+              </Button>
+              <Button asChild variant={"ghost"}>
+                <Link to="/products">
+                  View Products <StoreIcon />
+                </Link>
+              </Button>
+            </motion.div>
           </div>
 
-          <AnimatePresence>
-            <motion.img
-              alt="Dashboard screenshot"
-              className="transform-[perspective(10px)_rotateY(-0.4deg)_skewY(1deg)_scale(0.75)] relative rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)] max-md:hidden"
-              initial={{ right: -300 }}
-              src={DashboardImage}
-              transition={{ type: "spring", duration: 2 }}
-              whileInView={{ right: 0 }}
-            />
-          </AnimatePresence>
+          <motion.img
+            alt="Dashboard screenshot"
+            className="transform-[perspective(10px)_rotateY(-0.4deg)_skewY(1deg)_scale(0.75)] relative rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)] max-md:hidden"
+            initial={{ right: -300 }}
+            src={DashboardImage}
+            transition={{ type: "spring", duration: 2 }}
+            viewport={{ once: true }}
+            whileInView={{ right: 0 }}
+          />
         </div>
       </section>
 
@@ -155,67 +151,63 @@ function HomeComponent() {
               }}
             >
               <div className="flex gap-1 *:flex-1">
-                <AnimatePresence>
-                  <motion.div
-                    initial={{ x: -100 }}
-                    transition={{ type: "spring", duration: 0.8 }}
-                    viewport={{ once: true }}
-                    whileInView={{ x: 0 }}
-                  >
-                    <form.Field name="firstName">
-                      {(field) => (
-                        <div className="space-y-2">
-                          <Label htmlFor={field.name}>First name</Label>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            placeholder="john"
-                            type="text"
-                            value={field.state.value}
-                          />
-                          {field.state.meta.errors.map((error) => (
-                            <p className="text-red-500" key={error?.message}>
-                              {error?.message}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </form.Field>
-                  </motion.div>
-                </AnimatePresence>
+                <motion.div
+                  initial={{ x: -100 }}
+                  transition={{ type: "spring", duration: 0.8 }}
+                  viewport={{ once: true }}
+                  whileInView={{ x: 0 }}
+                >
+                  <form.Field name="firstName">
+                    {(field) => (
+                      <div className="space-y-2">
+                        <Label htmlFor={field.name}>First name</Label>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder="john"
+                          type="text"
+                          value={field.state.value}
+                        />
+                        {field.state.meta.errors.map((error) => (
+                          <p className="text-red-500" key={error?.message}>
+                            {error?.message}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </form.Field>
+                </motion.div>
 
-                <AnimatePresence>
-                  <motion.div
-                    initial={{ x: 100 }}
-                    transition={{ type: "spring", duration: 0.8 }}
-                    viewport={{ once: true }}
-                    whileInView={{ x: 0 }}
-                  >
-                    <form.Field name="lastName">
-                      {(field) => (
-                        <div className="space-y-2">
-                          <Label htmlFor={field.name}>Last name</Label>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            placeholder="doe"
-                            type="text"
-                            value={field.state.value}
-                          />
-                          {field.state.meta.errors.map((error) => (
-                            <p className="text-red-500" key={error?.message}>
-                              {error?.message}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </form.Field>
-                  </motion.div>
-                </AnimatePresence>
+                <motion.div
+                  initial={{ x: 100 }}
+                  transition={{ type: "spring", duration: 0.8 }}
+                  viewport={{ once: true }}
+                  whileInView={{ x: 0 }}
+                >
+                  <form.Field name="lastName">
+                    {(field) => (
+                      <div className="space-y-2">
+                        <Label htmlFor={field.name}>Last name</Label>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder="doe"
+                          type="text"
+                          value={field.state.value}
+                        />
+                        {field.state.meta.errors.map((error) => (
+                          <p className="text-red-500" key={error?.message}>
+                            {error?.message}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </form.Field>
+                </motion.div>
               </div>
 
               <AnimatePresence>
