@@ -3,9 +3,11 @@ import { Button } from "./ui/button";
 import { useState } from "react";
 import { MenuIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useScroll, motion } from "motion/react";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const { scrollYProgress } = useScroll();
 
   const links = [
     { to: "/", label: "Home" },
@@ -14,7 +16,9 @@ export default function Header() {
   ] as const;
 
   return (
-    <div className="sticky top-0 z-50 bg-background/60 backdrop-blur-sm">
+    <div
+      className={cn("sticky top-0 z-50 bg-background/60 backdrop-blur-sm", { "border-b": !isOpen })}
+    >
       <div className="flex flex-row items-center justify-between">
         <nav className="relative flex justify-between items-center w-full gap-4 px-2 sm:px-4 py-3">
           <Link to="/" className="grow">
@@ -37,9 +41,9 @@ export default function Header() {
 
             <div className="flex gap-2 max-sm:pb-5">
               <Button asChild>
-                <Link to="#waitlist" className="text-xs">
+                <a href="#waitlist" className="text-xs">
                   Join Waitlist
-                </Link>
+                </a>
               </Button>
             </div>
           </div>
@@ -87,11 +91,14 @@ export default function Header() {
             <span className="sr-only">{isOpen ? "Close menu" : "Open menu"}</span>
           </Button>
         </nav>
-
-        {/* <div className="flex items-center gap-2"></div> */}
       </div>
 
-      {!isOpen && <hr />}
+      {!isOpen && (
+        <motion.div
+          style={{ scaleX: scrollYProgress }}
+          className="bg-foreground h-px flex justify-start items-start  "
+        />
+      )}
     </div>
   );
 }
