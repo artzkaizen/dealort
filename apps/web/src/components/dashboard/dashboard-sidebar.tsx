@@ -1,10 +1,13 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  BarChart3Icon,
   ChevronsUpDownIcon,
+  FileText,
   LayoutDashboard,
   LogOut,
   Settings,
   User,
+  Users,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -32,21 +35,21 @@ const dashboardLinks = [
     icon: LayoutDashboard,
   },
   // Additional routes can be added here as they are created:
-  // {
-  //   path: "/dashboard/analytics",
-  //   label: "Analytics",
-  //   icon: BarChart3,
-  // },
-  // {
-  //   path: "/dashboard/users",
-  //   label: "Users",
-  //   icon: Users,
-  // },
-  // {
-  //   path: "/dashboard/documents",
-  //   label: "Documents",
-  //   icon: FileText,
-  // },
+  {
+    path: "/dashboard/analytics",
+    label: "Analytics",
+    icon: BarChart3Icon,
+  },
+  {
+    path: "/dashboard/users",
+    label: "Users",
+    icon: Users,
+  },
+  {
+    path: "/dashboard/documents",
+    label: "Documents",
+    icon: FileText,
+  },
   // {
   //   path: "/dashboard/settings",
   //   label: "Settings",
@@ -105,7 +108,7 @@ function UserProfile() {
           <ChevronsUpDownIcon className="size-4" />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="p-2" side="right">
+      <PopoverContent className="size-fit p-2" side="right">
         <div className="flex min-w-[120px] flex-col gap-1">
           <Button
             className="w-full justify-start"
@@ -133,30 +136,55 @@ function UserProfile() {
 
 // Main Sidebar component
 export function DashboardSidebar() {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const { location } = useRouterState();
+  const currentPathname = location.pathname;
+
+  // Helper function to determine if a link is active
+  const isLinkActive = (linkPath: string) => {
+    // For the dashboard home route, use exact matching
+    if (linkPath === "/dashboard") {
+      return (
+        currentPathname === "/dashboard" || currentPathname === "/dashboard/"
+      );
+    }
+    // For other routes, use prefix matching (so sub-routes are also active)
+    return (
+      currentPathname === linkPath || currentPathname.startsWith(`${linkPath}/`)
+    );
+  };
+
   return (
     // Only show sidebar on large screens (lg breakpoint and above)
     <div className="hidden lg:block">
       <Sidebar className="border-r" collapsible="icon">
         {/* Sidebar Header with toggle button */}
-        <SidebarHeader>
-          <div className="flex w-full items-center justify-between">
-            <h2 className="px-2 font-semibold text-lg">Dashboard</h2>
+        <SidebarHeader className="px-2">
+          <div className="flex w-full items-center justify-between border-b py-2">
+            <h2 className="flex w-full items-center gap-1" id="">
+              <Button aria-label="dealort dashboard" className="max-h-8" />
+              {!isCollapsed && "Dealort"}
+            </h2>
           </div>
         </SidebarHeader>
 
         {/* Sidebar Content with navigation links */}
-        <SidebarContent>
+        <SidebarContent className="pl-2">
           <SidebarMenu>
             {dashboardLinks.map((link) => {
               const Icon = link.icon;
+              const isActive = isLinkActive(link.path);
               return (
                 <SidebarMenuItem key={link.path}>
                   <SidebarMenuButton asChild>
                     <Link
-                      activeProps={{
-                        className: "bg-accent text-accent-foreground",
-                      }}
-                      className="flex items-center gap-3"
+                      className={cn(
+                        "flex items-center gap-3 rounded-none rounded-s-xl",
+                        isActive &&
+                          "border-foreground border-r-4 text-accent-foreground"
+                      )}
+                      // @ts-expect-error - TanStack Router types are strict and some dashboard routes may not be registered yet
                       to={link.path}
                     >
                       <Icon className="size-4 shrink-0" />

@@ -104,9 +104,11 @@ function DashboardBreadcrumbs() {
               {idx !== 0 && <BreadcrumbSeparator />}
               <BreadcrumbItem>
                 {idx === visibleCrumbs.length - 1 ? (
-                  <BreadcrumbPage>{breadcrumbItem.label}</BreadcrumbPage>
+                  <BreadcrumbPage className="truncate text-xs">
+                    {breadcrumbItem.label}
+                  </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild>
+                  <BreadcrumbLink asChild className="text-xs">
                     <Link to={breadcrumbItem.href}>{breadcrumbItem.label}</Link>
                   </BreadcrumbLink>
                 )}
@@ -119,16 +121,16 @@ function DashboardBreadcrumbs() {
   );
 }
 
-export function DashboardTopbar() {
+export function DashboardHeader() {
   return (
-    <div className="sticky top-0 flex w-full items-center justify-between border-b bg-background px-4 py-3">
+    <div className="sticky top-0 flex w-full items-center justify-between border-b bg-sidebar px-4 py-3">
       <div className="flex grow items-center gap-3">
         {/* Sidebar Trigger */}
-        <SidebarTrigger className="">
+        <SidebarTrigger className="border-r">
           <Menu className="size-5" />
           <span className="sr-only">Toggle Sidebar</span>
         </SidebarTrigger>
-        {/* Breadcrumbs */}
+
         <DashboardBreadcrumbs />
       </div>
 
