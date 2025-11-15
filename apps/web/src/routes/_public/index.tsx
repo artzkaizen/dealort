@@ -264,10 +264,21 @@ function HomeComponent() {
 function MouseFollower() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const movementTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
+      setIsMoving(true);
+
+      if (movementTimeoutRef.current) {
+        clearTimeout(movementTimeoutRef.current);
+      }
+
+      movementTimeoutRef.current = window.setTimeout(() => {
+        setIsMoving(false);
+      }, 150);
     };
 
     const handleFocusIn = (e: FocusEvent) => {
@@ -293,6 +304,9 @@ function MouseFollower() {
       window.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("focusout", handleFocusOut);
+      if (movementTimeoutRef.current) {
+        clearTimeout(movementTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -302,6 +316,7 @@ function MouseFollower() {
         x: mousePosition.x - 10,
         y: mousePosition.y - 10,
         opacity: isInputFocused ? 0 : 1,
+        scale: isMoving ? 0.6 : 1,
       }}
       className="pointer-events-none fixed z-1 h-5 w-5 rounded-full bg-foreground/10"
       style={{
@@ -315,6 +330,7 @@ function MouseFollower() {
         damping: 15,
         mass: 0.1,
         opacity: { duration: 0.2 },
+        scale: { duration: 0.3, ease: "easeOut" },
       }}
     />
   );
