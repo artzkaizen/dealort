@@ -1,9 +1,10 @@
 import { auth } from "@dealort/auth";
+import { db } from "@dealort/db";
 import type { Context as HonoContext } from "hono";
 
-export type CreateContextOptions = {
+export interface CreateContextOptions {
   context: HonoContext;
-};
+}
 
 export async function createContext({ context }: CreateContextOptions) {
   const session = await auth.api.getSession({
@@ -11,6 +12,7 @@ export async function createContext({ context }: CreateContextOptions) {
   });
   return {
     session,
+    db,
   };
 }
 

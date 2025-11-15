@@ -33,6 +33,9 @@
             "style": "interface"
           }
         }
+      },
+      "performance": {
+        "noNamespaceImport": "off"
       }
     }
   }
