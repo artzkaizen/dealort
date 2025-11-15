@@ -73,7 +73,7 @@ function HomeComponent() {
         }}
       >
         <div className="flex h-full flex-col overflow-hidden">
-          <div className="z-10 mt-24 ml-4 flex min-w-[35%] flex-col gap-2 px-4 md:px-32 lg:px-[17%]">
+          <div className="z-10 mt-24 ml-4 flex min-w-[35%] max-w-[90vw] flex-col gap-2 px-4 md:px-32 lg:px-[17%] xl:px-[23%]">
             <motion.h1
               className="max-w-xl text-5xl md:text-6xl"
               initial={{ filter: "blur(10px)", y: -10 }}
