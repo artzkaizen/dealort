@@ -123,7 +123,7 @@ function DashboardBreadcrumbs() {
 
 export function DashboardHeader() {
   return (
-    <div className="sticky top-0 flex w-full items-center justify-between border-b bg-sidebar px-4 py-3">
+    <div className="sticky top-0 flex w-full items-center justify-between border-b bg-sidebar px-2 py-3">
       <div className="flex grow items-center gap-3">
         {/* Sidebar Trigger */}
         <SidebarTrigger className="border-r">

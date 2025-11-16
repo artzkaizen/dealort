@@ -1,15 +1,13 @@
 export const NotFoundComponent = () => (
   <main className="flex max-h-screen min-h-full w-full flex-col items-center justify-center">
     <div className="relative h-40 w-40" style={{ perspective: "900px" }}>
-      {/* Bottom square, points to 4 O'clock (rotated 45deg, a bit towards bottom-right) */}
-      {/* Both squares rotated to point at 10 O'Clock (from bottom to top), using same degrees */}
       <div
-        className="absolute top-1/2 left-1/2 h-24 w-24 rounded-lg bg-popover"
+        className="absolute top-1/2 left-1/2 h-24 w-24 rounded-lg border bg-popover"
         style={{
           transform: `
             translate(-50%, -50%)
             rotateZ(-45deg)
-            rotateX(-18deg)
+            rotateX(8deg)
             rotateY(18deg)
           `,
           zIndex: 1,
@@ -17,13 +15,13 @@ export const NotFoundComponent = () => (
         }}
       />
       <div
-        className="absolute top-1/2 left-1/2 h-24 w-24 rounded-lg bg-popover"
+        className="absolute top-1/2 left-1/2 h-24 w-24 rounded-lg border bg-popover"
         style={{
           transform: `
             translate(-50%, -50%)
             translateY(-16px)
             rotateZ(-45deg)
-            rotateX(-18deg)
+            rotateX(-20deg)
             rotateY(318deg)
           `,
           zIndex: 2,
