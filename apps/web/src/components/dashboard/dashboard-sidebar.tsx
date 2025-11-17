@@ -181,8 +181,10 @@ export function DashboardSidebar() {
                     <Link
                       className={cn(
                         "flex items-center gap-3 rounded-none rounded-s-xl",
-                        isActive &&
-                          "border-foreground border-r-4 text-accent-foreground"
+                        {
+                          "border-foreground border-r-4 bg-secondary text-accent-foreground":
+                            isActive,
+                        }
                       )}
                       // @ts-expect-error - TanStack Router types are strict and some dashboard routes may not be registered yet
                       to={link.path}

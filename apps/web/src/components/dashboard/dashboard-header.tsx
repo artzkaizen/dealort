@@ -123,7 +123,7 @@ function DashboardBreadcrumbs() {
 
 export function DashboardHeader() {
   return (
-    <div className="sticky top-0 flex w-full items-center justify-between border-b bg-sidebar px-2 py-3">
+    <div className="sticky top-0 z-50 flex w-full items-center justify-between border-b bg-sidebar/70 px-2 py-3 backdrop-blur-sm">
       <div className="flex grow items-center gap-3">
         {/* Sidebar Trigger */}
         <SidebarTrigger className="border-r">
@@ -140,7 +140,7 @@ export function DashboardHeader() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild className="rounded-xl" variant="default">
-              <Link to="/dashboard">
+              <Link to="/dashboard/products/new">
                 <PlusIcon />
               </Link>
             </Button>

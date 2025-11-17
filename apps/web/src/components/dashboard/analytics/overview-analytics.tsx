@@ -10,7 +10,7 @@ import { useDashboardStore } from "@/stores/dashboard-store";
 
 const analyticsCardsData = [
   {
-    label: "Daily Revenue",
+    label: "Revenue",
     value: "$612.10",
     change: {
       value: "+$36.15",
@@ -21,7 +21,7 @@ const analyticsCardsData = [
     icon: <ArrowUpRight className="size-4 text-green-500" />,
   },
   {
-    label: "Active Subscribers",
+    label: "Impressions",
     value: "42,243",
     change: {
       value: "+12,451",
@@ -32,7 +32,7 @@ const analyticsCardsData = [
     icon: <ArrowUpRight className="size-4 text-green-500" />,
   },
   {
-    label: "New Subscribers",
+    label: "Ratings",
     value: "1605",
     change: {
       value: "+305",
@@ -43,7 +43,7 @@ const analyticsCardsData = [
     icon: <ArrowUpRight className="size-4 text-green-500" />,
   },
   {
-    label: "Churn Rate",
+    label: "Expectancy",
     value: "3.2%",
     change: {
       value: "-8.1%",
