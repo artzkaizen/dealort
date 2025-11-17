@@ -157,7 +157,7 @@ export function DashboardSidebar() {
 
   return (
     // Only show sidebar on large screens (lg breakpoint and above)
-    <div className="hidden lg:block">
+    <div className="z-50">
       <Sidebar className="border-r" collapsible="icon">
         {/* Sidebar Header with toggle button */}
         <SidebarHeader className="px-2">

@@ -1,6 +1,14 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { CheckCircleIcon, CircleOff, EyeIcon, LoaderIcon, Text } from "lucide-react";
-import React from "react";
+import {
+  CheckCircleIcon,
+  CircleOff,
+  EllipsisIcon,
+  EyeIcon,
+  LoaderIcon,
+  Text,
+  Trash2Icon,
+  TrashIcon,
+} from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { useDataTable } from "@/hooks/use-data-table";
 import { cn } from "@/lib/utils";
@@ -149,14 +157,24 @@ const data = [
 const pageCount = 1;
 type RevenueRow = (typeof data)[number];
 
-import { useState } from "react";
+import { Suspense } from "react";
 import { Checkbox } from "@/components/ui/checkbox"; // Make sure your Checkbox import path is correct
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
+import Loader from "../loader";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 export function RevenueTable() {
   const columns: ColumnDef<RevenueRow>[] = [
-    // Selection/Checkbox column - must be first!
     {
       id: "select",
       header: ({ table: headerTable }) => {
@@ -347,138 +365,21 @@ export function RevenueTable() {
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row, table }) => {
+      cell: ({ row }) => {
         const rowData = row.original;
-        const [openView, setOpenView] = useState(false);
-        const [openDelete, setOpenDelete] = useState(false);
         // We'll simulate delete by removing from the table: (in real project, connect this with a mutation or redux, etc.)
-
-        // Remove row from table state
-        function handleDelete() {
-          // Assumes that "data" is controlled outside; in real usage, lift this up.
-          // Here, a no-op for demonstration. Could provide a callback prop via RevenueTable if real delete needed.
-          setOpenDelete(false);
-          // You may want to add notification/toast here
-        }
 
         return (
           <div className="flex items-center gap-2">
-            {/* View Dialog */}
-            <React.Fragment>
-              <button
-                aria-label="View Row"
-                className="rounded p-1 hover:bg-muted"
-                onClick={() => setOpenView(true)}
-                title="View Row"
-                type="button"
-              >
-                <span aria-label="View" role="img">
-                  👁️
-                </span>
-              </button>
-              <Dialog onOpenChange={setOpenView} open={openView}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Revenue Row Information</DialogTitle>
-                    <DialogDescription>
-                      Details of revenue entry <b>{rowData.paymentId}</b>
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <img
-                        alt="Avatar"
-                        className="size-10 rounded-full"
-                        src={rowData.avatar}
-                      />
-                      <div>
-                        <div className="font-semibold">
-                          {rowData.firstname} {rowData.lastname}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          {rowData.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <b>Status:</b> {rowData.status}
-                    </div>
-                    <div>
-                      <b>Amount:</b> ${rowData.amount}
-                    </div>
-                    <div>
-                      <b>Method:</b> {rowData.method}
-                    </div>
-                    <div>
-                      <b>Date:</b> {rowData.date}
-                    </div>
-                    <div>
-                      <b>Remark:</b> {rowData.remark}
-                    </div>
-                    <div>
-                      <b>Payment ID:</b> {rowData.paymentId}
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      onClick={() => setOpenView(false)}
-                      type="button"
-                      variant="outline"
-                    >
-                      Close
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </React.Fragment>
-            {/* Delete Dialog */}
-            <React.Fragment>
-              <button
-                aria-label="Delete Row"
-                className="rounded p-1 hover:bg-muted"
-                onClick={() => setOpenDelete(true)}
-                style={{ color: "var(--destructive)" }}
-                title="Delete Row"
-                type="button"
-              >
-                <span aria-label="Delete" role="img">
-                  🗑️
-                </span>
-              </button>
-              <Dialog onOpenChange={setOpenDelete} open={openDelete}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Delete Revenue Row?</DialogTitle>
-                  </DialogHeader>
-                  <div>
-                    Are you sure you want to delete{" "}
-                    <span className="font-semibold">
-                      {rowData.firstname} {rowData.lastname}
-                    </span>
-                    's payment? This action cannot be undone.
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      onClick={() => setOpenDelete(false)}
-                      type="button"
-                      variant="outline"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        table.options.meta?.onDeleteRow?.(rowData.id); // Use meta handler for delete if provided
-                        handleDelete();
-                      }}
-                      type="button"
-                      variant="destructive"
-                    >
-                      Delete
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </React.Fragment>
+            <Popover>
+              <PopoverTrigger>
+                <EllipsisIcon className="size-5" />
+              </PopoverTrigger>
+              <PopoverContent className="size-fit p-0">
+                <ViewDialog rowData={rowData} />
+                <DeleteDialog rowData={rowData} />
+              </PopoverContent>
+            </Popover>
           </div>
         );
       },
@@ -500,6 +401,7 @@ export function RevenueTable() {
       pagination: { pageSize: 10, pageIndex: 1 },
       rowSelection: {}, // Enable row selection state
     },
+
     getRowId: (row) => row.id,
     enableRowSelection: true, // <-- Important!
     enableMultiRowSelection: true, // <-- Enable multi selection (Select All)
@@ -507,12 +409,12 @@ export function RevenueTable() {
 
   return (
     <div>
-      <DataTable table={table}>
+      <DataTable className="max-w-70vw overflow-x-hidden" table={table}>
         <DataTableAdvancedToolbar table={table}>
           <DataTableFilterList table={table} />
           <DataTableSortList table={table} />
         </DataTableAdvancedToolbar>
-        {table.getRowModel().rows.length === 0 && (
+        {/* {table.getRowModel().rows.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
             <div className="text-4xl">🗃️</div>
             <div className="font-semibold text-lg">No revenue rows found</div>
@@ -521,21 +423,118 @@ export function RevenueTable() {
               filters or date range.
             </div>
           </div>
-        )}
+        )} */}
       </DataTable>
     </div>
   );
 }
 
-function ViewDialog({row}){
-  return(
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="flex gap-1"><EyeIcon /> View</Button>
-      </DialogTrigger>
-      <DialogContent>
-        
-      </DialogContent>
-    </Dialog>
-  )
+interface DialogProps {
+  rowData: {
+    avatar: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+    status: string;
+    amount: number;
+    method: string;
+    date: string;
+    remark: string;
+    paymentId: string;
+  };
+}
+
+function ViewDialog({ rowData }: DialogProps) {
+  return (
+    <Suspense fallback={<Loader />}>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="flex gap-1" variant={"ghost"}>
+            <EyeIcon /> View
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revenue Row Information</DialogTitle>
+            <DialogDescription>
+              Details of revenue entry <b>{rowData.paymentId}</b>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="size-16">
+                <AvatarImage src={rowData.avatar} />
+                <AvatarFallback>{rowData.firstname.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-semibold">
+                  {rowData.firstname} {rowData.lastname}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {rowData.email}
+                </div>
+              </div>
+            </div>
+            <div>
+              <b>Status:</b> {rowData.status}
+            </div>
+            <div>
+              <b>Amount:</b> ${rowData.amount}
+            </div>
+            <div>
+              <b>Method:</b> {rowData.method}
+            </div>
+            <div>
+              <b>Date:</b> {rowData.date}
+            </div>
+            <div>
+              <b>Remark:</b> {rowData.remark}
+            </div>
+            <div>
+              <b>Payment ID:</b> {rowData.paymentId}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Suspense>
+  );
+}
+
+function DeleteDialog({ rowData }: DialogProps) {
+  return (
+    <Suspense fallback={<Loader />}>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button
+            className="flex gap-1 text-destructive hover:text-destructive/70"
+            variant={"ghost"}
+          >
+            <Trash2Icon /> Delete
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader className="mt-5 *:text-center">
+            <div className="mb-3 flex justify-center">
+              <span className="rounded-lg border-2 border-destructive p-4 text-destructive">
+                <TrashIcon />
+              </span>
+            </div>
+            <DialogTitle>
+              Delete Transaction Id ({rowData.paymentId})
+            </DialogTitle>
+            <DialogDescription>
+              Note: this action cannot be reversed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant={"destructive"}>Delete transaction</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Suspense>
+  );
 }
