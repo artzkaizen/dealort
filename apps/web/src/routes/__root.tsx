@@ -13,7 +13,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { link, type orpc } from "@/utils/orpc";
 import "../index.css";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export interface RouterAppContext {
@@ -56,15 +55,10 @@ function RootComponent() {
         storageKey="vite-ui-theme"
       >
         <TooltipProvider>
-          <SidebarProvider defaultOpen={true}>
-            <Outlet />
-            <Toaster richColors />
-            {/* <TanStackRouterDevtools position="bottom-left" /> */}
-            <ReactQueryDevtools
-              buttonPosition="bottom-right"
-              position="bottom"
-            />
-          </SidebarProvider>
+          <Outlet />
+          <Toaster richColors />
+          {/* <TanStackRouterDevtools position="bottom-left" /> */}
+          <ReactQueryDevtools buttonPosition="bottom-right" position="bottom" />
         </TooltipProvider>
       </ThemeProvider>
     </>

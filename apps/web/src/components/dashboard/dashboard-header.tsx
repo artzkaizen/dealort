@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ModeToggle } from "../mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 // Breadcrumbs with ellipsis for overflow
@@ -103,9 +104,11 @@ function DashboardBreadcrumbs() {
               {idx !== 0 && <BreadcrumbSeparator />}
               <BreadcrumbItem>
                 {idx === visibleCrumbs.length - 1 ? (
-                  <BreadcrumbPage>{breadcrumbItem.label}</BreadcrumbPage>
+                  <BreadcrumbPage className="truncate text-xs">
+                    {breadcrumbItem.label}
+                  </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild>
+                  <BreadcrumbLink asChild className="text-xs">
                     <Link to={breadcrumbItem.href}>{breadcrumbItem.label}</Link>
                   </BreadcrumbLink>
                 )}
@@ -118,24 +121,26 @@ function DashboardBreadcrumbs() {
   );
 }
 
-export function DashboardTopbar() {
+export function DashboardHeader() {
   return (
-    <div className="sticky top-0 flex w-full items-center justify-between border-b bg-background px-4 py-3">
+    <div className="sticky top-0 z-45 flex w-full items-center justify-between border-b bg-sidebar/70 px-2 py-3 backdrop-blur-sm">
       <div className="flex grow items-center gap-3">
         {/* Sidebar Trigger */}
-        <SidebarTrigger className="">
+        <SidebarTrigger className="border-r">
           <Menu className="size-5" />
           <span className="sr-only">Toggle Sidebar</span>
         </SidebarTrigger>
-        {/* Breadcrumbs */}
+
         <DashboardBreadcrumbs />
       </div>
 
       <div className="flex items-center gap-2">
+        <ModeToggle />
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild className="rounded-xl" variant="default">
-              <Link to="/dashboard">
+              <Link to="/dashboard/products/new">
                 <PlusIcon />
               </Link>
             </Button>

@@ -43,7 +43,7 @@ function HomeComponent() {
     },
     validators: {
       onSubmit: formSchema,
-    },
+    }, 
     onSubmit: ({ value }) => {
       toast("You submitted the following values:", {
         description: (
@@ -64,6 +64,7 @@ function HomeComponent() {
 
   return (
     <main className="max-w-screen">
+      <MouseFollower />
       <section
         className="min-h-screen"
         style={{
@@ -73,7 +74,7 @@ function HomeComponent() {
         }}
       >
         <div className="flex h-full flex-col overflow-hidden">
-          <div className="z-10 mt-24 ml-4 flex min-w-[35%] flex-col gap-2 px-6">
+          <div className="z-10 mt-24 ml-4 flex min-w-[35%] max-w-[90vw] flex-col gap-2 px-4 md:px-32 lg:px-[17%] xl:px-[23%]">
             <motion.h1
               className="max-w-xl text-5xl md:text-6xl"
               initial={{ filter: "blur(10px)", y: -10 }}
@@ -149,7 +150,7 @@ function HomeComponent() {
           <RollingCubeFeature />
         </div>
 
-        <Card className="mt-5 max-w-full overflow-hidden border-none py-0 shadow-none sm:min-w-sm sm:max-w-xl">
+        <Card className="mt-5 max-w-full overflow-hidden border-none bg-transparent py-0 shadow-none sm:min-w-sm sm:max-w-xl">
           <CardHeader>
             <CardTitle>Join the wait list</CardTitle>
             <CardDescription>
@@ -257,6 +258,81 @@ function HomeComponent() {
         </p>
       </footer>
     </main>
+  );
+}
+
+function MouseFollower() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const movementTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+      setIsMoving(true);
+
+      if (movementTimeoutRef.current) {
+        clearTimeout(movementTimeoutRef.current);
+      }
+
+      movementTimeoutRef.current = window.setTimeout(() => {
+        setIsMoving(false);
+      }, 150);
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        setIsInputFocused(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      setIsInputFocused(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+      if (movementTimeoutRef.current) {
+        clearTimeout(movementTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <motion.div
+      animate={{
+        x: mousePosition.x - 10,
+        y: mousePosition.y - 10,
+        opacity: isInputFocused ? 0 : 1,
+        scale: isMoving ? 0.6 : 1,
+      }}
+      className="pointer-events-none fixed z-1 h-5 w-5 rounded-full bg-foreground/10"
+      style={{
+        left: 0,
+        top: 0,
+        transform: "translate(-50%, -50%)",
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 150,
+        damping: 15,
+        mass: 0.1,
+        opacity: { duration: 0.2 },
+        scale: { duration: 0.3, ease: "easeOut" },
+      }}
+    />
   );
 }
 

@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { NuqsAdapter } from "nuqs/adapters/react";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
-import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
@@ -8,12 +10,14 @@ export const Route = createFileRoute("/dashboard")({
 
 function RouteComponent() {
   return (
-    <>
-      <DashboardSidebar />
-      <main className="block w-full">
-        <DashboardTopbar />
-        <Outlet />
-      </main>
-    </>
+    <NuqsAdapter>
+      <SidebarProvider>
+        <DashboardSidebar />
+        <main className="w-full">
+          <DashboardHeader />
+          <Outlet />
+        </main>
+      </SidebarProvider>
+    </NuqsAdapter>
   );
 }
