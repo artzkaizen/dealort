@@ -138,6 +138,7 @@ function RouteComponent() {
     },
     validators: {
       onSubmit: productFormSchema,
+      onDynamic: productFormSchema
     },
 
     onSubmit: ({ value }) => {
@@ -189,10 +190,15 @@ function RouteComponent() {
           form.state.fieldMeta["productInformation.xUrl"].isValid &&
           form.state.fieldMeta["productInformation.linkedinUrl"].isValid;
 
+        console.log(
+          form.runValidator()
+          form.getFieldMeta("productInformation.name")?.isValid
+        );
+
         // if (isValid) {
         //   setFormStep(formCollection[formStep.step]);
         // }
-        console.log(form.state.fieldMeta);
+        // console.log(form.state.fieldMeta);
       }
     } finally {
       setIsTransitioning(false);
