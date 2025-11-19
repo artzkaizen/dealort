@@ -16,6 +16,7 @@ import {
   ComboboxGroupLabel,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxTrigger,
 } from "@/components/ui/dice-combobox";
 import { Input } from "@/components/ui/input";
@@ -177,6 +178,21 @@ function RouteComponent() {
           setFormStep(formCollection[formStep.step]);
         }
         console.log(isValid);
+      }
+
+      if (formStep?.step === 2) {
+        const isValid =
+          form.state.fieldMeta["productInformation.name"].isValid &&
+          form.state.fieldMeta["productInformation.tagline"].isValid &&
+          form.state.fieldMeta["productInformation.description"].isValid &&
+          form.state.fieldMeta["productInformation.category"].isValid &&
+          form.state.fieldMeta["productInformation.xUrl"].isValid &&
+          form.state.fieldMeta["productInformation.linkedinUrl"].isValid;
+
+        // if (isValid) {
+        //   setFormStep(formCollection[formStep.step]);
+        // }
+        console.log(form.state.fieldMeta);
       }
     } finally {
       setIsTransitioning(false);
@@ -780,6 +796,9 @@ export function CategoriesCombobox({
 
   return (
     <Combobox multiple onValueChange={setCurrentValue} value={currentValue}>
+      <ComboboxLabel className="pt-0 font-medium text-xs sm:text-sm">
+        Categories
+      </ComboboxLabel>
       <ComboboxAnchor asChild>
         <TagsInput
           className="relative flex h-full min-h-10 w-full flex-row flex-wrap items-center justify-start gap-1.5 px-2.5 py-2"
