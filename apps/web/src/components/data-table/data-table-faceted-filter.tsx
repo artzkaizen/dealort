@@ -41,7 +41,7 @@ export function DataTableFacetedFilter<TData, TValue>({
 
   const columnFilterValue = column?.getFilterValue();
   const selectedValues = new Set(
-    Array.isArray(columnFilterValue) ? columnFilterValue : [],
+    Array.isArray(columnFilterValue) ? columnFilterValue : []
   );
 
   const onItemSelect = React.useCallback(
@@ -62,7 +62,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         setOpen(false);
       }
     },
-    [column, multiple, selectedValues],
+    [column, multiple, selectedValues]
   );
 
   const onReset = React.useCallback(
@@ -70,24 +70,24 @@ export function DataTableFacetedFilter<TData, TValue>({
       event?.stopPropagation();
       column?.setFilterValue(undefined);
     },
-    [column],
+    [column]
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
           className="border-dashed font-normal"
+          size="sm"
+          variant="outline"
         >
           {selectedValues?.size > 0 ? (
             <div
-              role="button"
               aria-label={`Clear ${title} filter`}
-              tabIndex={0}
               className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               onClick={onReset}
+              role="button"
+              tabIndex={0}
             >
               <XCircle />
             </div>
@@ -98,20 +98,20 @@ export function DataTableFacetedFilter<TData, TValue>({
           {selectedValues?.size > 0 && (
             <>
               <Separator
-                orientation="vertical"
                 className="mx-0.5 data-[orientation=vertical]:h-4"
+                orientation="vertical"
               />
               <Badge
-                variant="secondary"
                 className="rounded-sm px-1 font-normal lg:hidden"
+                variant="secondary"
               >
                 {selectedValues.size}
               </Badge>
               <div className="hidden items-center gap-1 lg:flex">
                 {selectedValues.size > 2 ? (
                   <Badge
-                    variant="secondary"
                     className="rounded-sm px-1 font-normal"
+                    variant="secondary"
                   >
                     {selectedValues.size} selected
                   </Badge>
@@ -120,9 +120,9 @@ export function DataTableFacetedFilter<TData, TValue>({
                     .filter((option) => selectedValues.has(option.value))
                     .map((option) => (
                       <Badge
-                        variant="secondary"
-                        key={option.value}
                         className="rounded-sm px-1 font-normal"
+                        key={option.value}
+                        variant="secondary"
                       >
                         {option.label}
                       </Badge>
@@ -133,7 +133,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-50 p-0" align="start">
+      <PopoverContent align="start" className="w-50 p-0">
         <Command>
           <CommandInput placeholder={title} />
           <CommandList className="max-h-full">
@@ -152,7 +152,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                         "flex size-4 items-center justify-center rounded-sm border border-primary",
                         isSelected
                           ? "bg-primary"
-                          : "opacity-50 [&_svg]:invisible",
+                          : "opacity-50 [&_svg]:invisible"
                       )}
                     >
                       <Check />
@@ -173,8 +173,8 @@ export function DataTableFacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => onReset()}
                     className="justify-center text-center"
+                    onSelect={() => onReset()}
                   >
                     Clear filters
                   </CommandItem>

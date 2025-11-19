@@ -41,7 +41,7 @@ export const Route = createFileRoute("/dashboard/products/new")({
 });
 
 const getStartedForm = z.object({
-  url: z.string().url("Please enter a valid URL"),
+  url: z.url("Please enter a valid URL"),
   isDev: z.boolean(),
 });
 

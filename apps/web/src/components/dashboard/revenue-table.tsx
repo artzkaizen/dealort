@@ -10,7 +10,6 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
-import { useDataTable } from "@/hooks/use-data-table";
 import { cn } from "@/lib/utils";
 import { DataTable } from "../data-table/data-table";
 import { DataTableAdvancedToolbar } from "../data-table/data-table-advanced-toolbar";
@@ -159,6 +158,8 @@ type RevenueRow = (typeof data)[number];
 
 import { Suspense } from "react";
 import { Checkbox } from "@/components/ui/checkbox"; // Make sure your Checkbox import path is correct
+import { useDataGrid } from "@/hooks/use-data-grid";
+import { DataGrid } from "../data-grid/data-grid";
 import Loader from "../loader";
 import { Button } from "../ui/button";
 import {
@@ -173,239 +174,247 @@ import {
 } from "../ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-export function RevenueTable() {
-  const columns: ColumnDef<RevenueRow>[] = [
-    {
-      id: "select",
-      header: ({ table: headerTable }) => {
-        const isAllSelected = headerTable.getIsAllPageRowsSelected();
-        const isSomeSelected = headerTable.getIsSomePageRowsSelected();
+const columns: ColumnDef<RevenueRow>[] = [
+  {
+    id: "select",
+    header: ({ table: headerTable }) => {
+      const isAllSelected = headerTable.getIsAllPageRowsSelected();
+      const isSomeSelected = headerTable.getIsSomePageRowsSelected();
 
-        let checked: boolean | "indeterminate" = false;
-        if (isAllSelected) {
-          checked = true;
-        } else if (isSomeSelected) {
-          checked = "indeterminate";
-        }
+      let checked: boolean | "indeterminate" = false;
+      if (isAllSelected) {
+        checked = true;
+      } else if (isSomeSelected) {
+        checked = "indeterminate";
+      }
 
-        return (
-          <Checkbox
-            aria-label="Select all"
-            checked={checked}
-            className="mx-2"
-            onCheckedChange={(value) => {
-              headerTable.toggleAllPageRowsSelected(value === true);
-            }}
-          />
-        );
-      },
-      cell: ({ row }) => (
+      return (
         <Checkbox
-          aria-label="Select row"
-          checked={row.getIsSelected()}
+          aria-label="Select all"
+          checked={checked}
           className="mx-2"
-          disabled={!row.getCanSelect()}
-          onCheckedChange={(checked) => row.toggleSelected(checked === true)}
+          onCheckedChange={(value) => {
+            headerTable.toggleAllPageRowsSelected(value === true);
+          }}
         />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      size: 32, // Optional: for column sizing
-      meta: {
-        label: "select",
-      },
+      );
     },
-    {
-      id: "paymentId",
-      accessorKey: "paymentId",
-      header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          label="Payment Id"
-          title="payment id"
-        />
-      ),
-      cell: ({ row }) => <div>{row.getValue("paymentId")}</div>,
-      meta: {
-        label: "payment id",
-        placeholder: "Search payment id...",
-        variant: "text",
-        icon: Text,
-      },
-      enableColumnFilter: true,
+    cell: ({ row }) => (
+      <Checkbox
+        aria-label="Select row"
+        checked={row.getIsSelected()}
+        className="mx-2"
+        disabled={!row.getCanSelect()}
+        onCheckedChange={(checked) => row.toggleSelected(checked === true)}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32, // Optional: for column sizing
+    meta: {
+      label: "select",
     },
-    {
-      id: "name",
-      accessorKey: "name",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Name" title="Name" />
-      ),
-      cell: ({ row }) => {
-        const customer = row.original;
+  },
+  {
+    id: "paymentId",
+    accessorKey: "paymentId",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        label="Payment Id"
+        title="payment id"
+      />
+    ),
+    cell: ({ row }) => <div>{row.getValue("paymentId")}</div>,
+    meta: {
+      label: "payment id",
+      placeholder: "Search payment id...",
+      variant: "text",
+      icon: Text,
+    },
+    enableColumnFilter: true,
+  },
+  {
+    id: "name",
+    accessorKey: "name",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} label="Name" title="Name" />
+    ),
+    cell: ({ row }) => {
+      const customer = row.original;
 
-        return (
-          <div className="flex items-center gap-1">
-            <Avatar className="size-4 sm:size-5">
-              <AvatarImage
-                alt={`${customer.firstname} ${customer.lastname}`}
-                src={customer.avatar}
-              />
-              <AvatarFallback>
-                {customer.firstname?.charAt(0)}
-                {customer.lastname?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+      return (
+        <div className="flex items-center gap-1">
+          <Avatar className="size-4 sm:size-5">
+            <AvatarImage
+              alt={`${customer.firstname} ${customer.lastname}`}
+              src={customer.avatar}
+            />
+            <AvatarFallback>
+              {customer.firstname?.charAt(0)}
+              {customer.lastname?.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
 
-            <span className="truncate text-xs capitalize sm:text-sm">
-              {`${customer.firstname ?? ""} ${customer.lastname ?? ""}`.trim()}
-            </span>
-          </div>
-        );
-      },
-      meta: {
-        label: "name",
-        placeholder: "Search name...",
-        variant: "text",
-        icon: Text,
-      },
-      enableColumnFilter: true,
+          <span className="truncate text-xs capitalize sm:text-sm">
+            {`${customer.firstname ?? ""} ${customer.lastname ?? ""}`.trim()}
+          </span>
+        </div>
+      );
     },
-    {
-      id: "email",
-      accessorKey: "email",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Email" title="email" />
-      ),
-      cell: ({ row }) => (
-        <div className="truncate">{row.getValue("email")}</div>
-      ),
-      meta: {
-        label: "email",
-        placeholder: "Search email...",
-        variant: "text",
-        icon: Text,
-      },
-      enableColumnFilter: true,
+    meta: {
+      label: "name",
+      placeholder: "Search name...",
+      variant: "text",
+      icon: Text,
     },
-    {
-      id: "status",
-      accessorKey: "status",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Status" title="status" />
-      ),
-      cell: ({ row }) => {
-        const status = row.getValue("status");
-        return (
-          <div
-            className={cn(
-              "flex size-fit items-center gap-1 rounded-full px-2 py-1 text-xs capitalize sm:text-sm [&>svg]:size-3 sm:[&>svg]:size-4",
-              { "bg-green-500/30": status === "completed" },
-              { "bg-blue-500/30": status === "processing" },
-              { "bg-red-500/30": status === "failed" }
-            )}
-          >
-            {(() => {
-              if (status === "completed") {
-                return <CheckCircleIcon />;
-              }
-              if (status === "processing") {
-                return <LoaderIcon />;
-              }
-              return <CircleOff />;
-            })()}
+    enableColumnFilter: true,
+  },
+  {
+    id: "email",
+    accessorKey: "email",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} label="Email" title="email" />
+    ),
+    cell: ({ row }) => <div className="truncate">{row.getValue("email")}</div>,
+    meta: {
+      label: "email",
+      placeholder: "Search email...",
+      variant: "text",
+      icon: Text,
+    },
+    enableColumnFilter: true,
+  },
+  {
+    id: "status",
+    accessorKey: "status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} label="Status" title="status" />
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue("status");
+      return (
+        <div
+          className={cn(
+            "flex size-fit items-center gap-1 rounded-full px-2 py-1 text-xs capitalize sm:text-sm [&>svg]:size-3 sm:[&>svg]:size-4",
+            { "bg-green-500/30": status === "completed" },
+            { "bg-blue-500/30": status === "processing" },
+            { "bg-red-500/30": status === "failed" }
+          )}
+        >
+          {(() => {
+            if (status === "completed") {
+              return <CheckCircleIcon />;
+            }
+            if (status === "processing") {
+              return <LoaderIcon />;
+            }
+            return <CircleOff />;
+          })()}
 
-            <span>{status as string}</span>
-          </div>
-        );
-      },
+          <span>{status as string}</span>
+        </div>
+      );
     },
-    {
-      id: "method",
-      accessorKey: "method",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Method" title="method" />
-      ),
-      cell: ({ row }) => (
-        <div className="lowercase">{row.getValue("method")}</div>
-      ),
-      meta: {
-        label: "method",
-        placeholder: "Search method...",
-        variant: "text",
-        icon: Text,
-      },
-      enableColumnFilter: true,
+  },
+  {
+    id: "method",
+    accessorKey: "method",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} label="Method" title="method" />
+    ),
+    cell: ({ row }) => (
+      <div className="lowercase">{row.getValue("method")}</div>
+    ),
+    meta: {
+      label: "method",
+      placeholder: "Search method...",
+      variant: "text",
+      icon: Text,
     },
-    {
-      id: "amount",
-      accessorKey: "amount",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Amount" title="amount" />
-      ),
-      cell: ({ row }) => (
-        <div className="truncate">${row.getValue("amount")}</div>
-      ),
-      meta: {
-        label: "amount",
-        placeholder: "Search amount...",
-        variant: "text",
-        icon: Text,
-      },
-      enableColumnFilter: true,
+    enableColumnFilter: true,
+  },
+  {
+    id: "amount",
+    accessorKey: "amount",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} label="Amount" title="amount" />
+    ),
+    cell: ({ row }) => (
+      <div className="truncate">${row.getValue("amount")}</div>
+    ),
+    meta: {
+      label: "amount",
+      placeholder: "Search amount...",
+      variant: "text",
+      icon: Text,
     },
-    {
-      id: "date",
-      accessorKey: "date",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Date" title="date" />
-      ),
-      cell: ({ row }) => <div className="truncate">{row.getValue("date")}</div>,
-      enableColumnFilter: true,
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const rowData = row.original;
-        // We'll simulate delete by removing from the table: (in real project, connect this with a mutation or redux, etc.)
+    enableColumnFilter: true,
+  },
+  {
+    id: "date",
+    accessorKey: "date",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} label="Date" title="date" />
+    ),
+    cell: ({ row }) => <div className="truncate">{row.getValue("date")}</div>,
+    enableColumnFilter: true,
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const rowData = row.original;
+      // We'll simulate delete by removing from the table: (in real project, connect this with a mutation or redux, etc.)
 
-        return (
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger>
-                <EllipsisIcon className="size-5" />
-              </PopoverTrigger>
-              <PopoverContent className="size-fit p-0">
-                <ViewDialog rowData={rowData} />
-                <DeleteDialog rowData={rowData} />
-              </PopoverContent>
-            </Popover>
-          </div>
-        );
-      },
-      size: 90,
-      enableSorting: false,
-      enableHiding: false,
-      meta: {
-        label: "Actions",
-      },
+      return (
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger>
+              <EllipsisIcon className="size-5" />
+            </PopoverTrigger>
+            <PopoverContent className="size-fit p-0">
+              <ViewDialog rowData={rowData} />
+              <DeleteDialog rowData={rowData} />
+            </PopoverContent>
+          </Popover>
+        </div>
+      );
     },
-  ];
+    size: 90,
+    enableSorting: false,
+    enableHiding: false,
+    meta: {
+      label: "Actions",
+    },
+  },
+];
+export function RevenueTable() {
+  // const { table } = useDataTable({
+  //   data,
+  //   columns,
+  //   pageCount,
+  //   initialState: {
+  //     sorting: [{ id: "date", desc: true }],
+  //     pagination: { pageSize: 10, pageIndex: 1 },
+  //     rowSelection: {}, // Enable row selection state
+  //   },
 
-  const { table } = useDataTable({
-    data,
+  //   getRowId: (row) => row.id,
+  //   enableRowSelection: true, // <-- Important!
+  //   enableMultiRowSelection: true, // <-- Enable multi selection (Select All)
+  // });
+
+  const { table, ...dataGridProps } = useDataGrid({
     columns,
-    pageCount,
-    initialState: {
-      sorting: [{ id: "date", desc: true }],
-      pagination: { pageSize: 10, pageIndex: 1 },
-      rowSelection: {}, // Enable row selection state
+    data,
+    onDataChange: (data) => {
+      console.log(data);
     },
-
-    getRowId: (row) => row.id,
-    enableRowSelection: true, // <-- Important!
-    enableMultiRowSelection: true, // <-- Enable multi selection (Select All)
+    enableSearch: true,
   });
+
+  return <DataGrid {...dataGridProps} height={340} table={table} />;
 
   return (
     <div>

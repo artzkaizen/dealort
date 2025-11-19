@@ -22,11 +22,11 @@ function getIsDateRange(value: DateSelection): value is DateRange {
 }
 
 function parseAsDate(timestamp: number | string | undefined): Date | undefined {
-  if (!timestamp) return undefined;
+  if (!timestamp) return;
   const numericTimestamp =
     typeof timestamp === "string" ? Number(timestamp) : timestamp;
   const date = new Date(numericTimestamp);
-  return !Number.isNaN(date.getTime()) ? date : undefined;
+  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 function parseColumnFilterValue(value: unknown) {
@@ -39,7 +39,7 @@ function parseColumnFilterValue(value: unknown) {
       if (typeof item === "number" || typeof item === "string") {
         return item;
       }
-      return undefined;
+      return;
     });
   }
 
@@ -96,7 +96,7 @@ export function DataTableDateFilter<TData>({
         column.setFilterValue(date.getTime());
       }
     },
-    [column, multiple],
+    [column, multiple]
   );
 
   const onReset = React.useCallback(
@@ -104,7 +104,7 @@ export function DataTableDateFilter<TData>({
       event.stopPropagation();
       column.setFilterValue(undefined);
     },
-    [column],
+    [column]
   );
 
   const hasValue = React.useMemo(() => {
@@ -117,7 +117,7 @@ export function DataTableDateFilter<TData>({
   }, [multiple, selectedDates]);
 
   const formatDateRange = React.useCallback((range: DateRange) => {
-    if (!range.from && !range.to) return "";
+    if (!(range.from || range.to)) return "";
     if (range.from && range.to) {
       return `${formatDate(range.from)} - ${formatDate(range.to)}`;
     }
@@ -139,8 +139,8 @@ export function DataTableDateFilter<TData>({
           {hasSelectedDates && (
             <>
               <Separator
-                orientation="vertical"
                 className="mx-0.5 data-[orientation=vertical]:h-4"
+                orientation="vertical"
               />
               <span>{dateText}</span>
             </>
@@ -162,8 +162,8 @@ export function DataTableDateFilter<TData>({
         {hasSelectedDate && (
           <>
             <Separator
-              orientation="vertical"
               className="mx-0.5 data-[orientation=vertical]:h-4"
+              orientation="vertical"
             />
             <span>{dateText}</span>
           </>
@@ -176,17 +176,17 @@ export function DataTableDateFilter<TData>({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
           className="border-dashed font-normal"
+          size="sm"
+          variant="outline"
         >
           {hasValue ? (
             <div
-              role="button"
               aria-label={`Clear ${title} filter`}
-              tabIndex={0}
-              onClick={onReset}
               className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              onClick={onReset}
+              role="button"
+              tabIndex={0}
             >
               <XCircle />
             </div>
@@ -196,27 +196,27 @@ export function DataTableDateFilter<TData>({
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent align="start" className="w-auto p-0">
         {multiple ? (
           <Calendar
             autoFocus
             captionLayout="dropdown"
             mode="range"
+            onSelect={onSelect}
             selected={
               getIsDateRange(selectedDates)
                 ? selectedDates
                 : { from: undefined, to: undefined }
             }
-            onSelect={onSelect}
           />
         ) : (
           <Calendar
             captionLayout="dropdown"
             mode="single"
-            selected={
-              !getIsDateRange(selectedDates) ? selectedDates[0] : undefined
-            }
             onSelect={onSelect}
+            selected={
+              getIsDateRange(selectedDates) ? undefined : selectedDates[0]
+            }
           />
         )}
       </PopoverContent>

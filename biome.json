@@ -27,6 +27,8 @@
   "linter": {
     "rules": {
       "style": {
+        "noShadow": "off",
+        "useBlockStatements": "off",
         "useConsistentTypeDefinitions": {
           "level": "error",
           "options": {

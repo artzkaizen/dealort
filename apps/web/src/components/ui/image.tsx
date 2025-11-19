@@ -1,8 +1,9 @@
-import { cn } from "@/lib/utils";
+import { type ImgHTMLAttributes, useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useRef, type ImgHTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
 
-export interface ImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "loading"> {
+export interface ImageProps
+  extends Omit<ImgHTMLAttributes<HTMLImageElement>, "loading"> {
   /**
    * The source URL of the image
    */
@@ -95,7 +96,7 @@ export function Image({
       },
       {
         rootMargin: "50px", // Start loading 50px before image enters viewport
-      },
+      }
     );
 
     observerRef.current.observe(imgElement);
@@ -156,7 +157,10 @@ export function Image({
   }
 
   return (
-    <div className={cn("relative overflow-hidden", className)} style={aspectRatioStyle}>
+    <div
+      className={cn("relative overflow-hidden", className)}
+      style={aspectRatioStyle}
+    >
       {/* Blur placeholder */}
       {blurDataURL && isLoading && (
         <img
@@ -169,27 +173,29 @@ export function Image({
       )}
 
       {/* Skeleton loading state */}
-      {isLoading && !loadingComponent && <Skeleton className="absolute inset-0 h-full w-full" />}
+      {isLoading && !loadingComponent && (
+        <Skeleton className="absolute inset-0 h-full w-full" />
+      )}
 
       {/* Main image */}
       {isInView && (
         <img
-          ref={imgRef}
           alt={alt}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-300",
-            isLoading ? "opacity-0" : "opacity-100",
+            isLoading ? "opacity-0" : "opacity-100"
           )}
           loading={nativeLazy ? "lazy" : undefined}
           onError={handleError}
           onLoad={handleLoad}
+          ref={imgRef}
           src={imageSrc}
           {...props}
         />
       )}
 
       {/* Fallback for browsers that don't support lazy loading */}
-      {!isInView && !nativeLazy && (
+      {!(isInView || nativeLazy) && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted">
           <Skeleton className="h-full w-full" />
         </div>

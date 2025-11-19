@@ -43,7 +43,7 @@ function HomeComponent() {
     },
     validators: {
       onSubmit: formSchema,
-    }, 
+    },
     onSubmit: ({ value }) => {
       toast("You submitted the following values:", {
         description: (
