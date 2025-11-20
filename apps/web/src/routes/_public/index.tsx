@@ -1,4 +1,3 @@
-import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CopyrightIcon,
@@ -9,8 +8,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import z from "zod";
 import DashboardImage from "@/assets/screenshots/dashboard-screenshot.svg";
 import DashboardImageNoNav from "@/assets/screenshots/dashboard-screenshot-no-nav.svg";
 import { Button } from "@/components/ui/button";
@@ -21,47 +18,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { WaitlistForm } from "@/components/waitlist-form";
 
 export const Route = createFileRoute("/_public/")({
   component: HomeComponent,
 });
 
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required."),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.email("Invalid email"),
-});
-
 function HomeComponent() {
-  const form = useForm({
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-    },
-    validators: {
-      onSubmit: formSchema,
-    },
-    onSubmit: ({ value }) => {
-      toast("You submitted the following values:", {
-        description: (
-          <pre className="mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground">
-            <code>{JSON.stringify(value, null, 2)}</code>
-          </pre>
-        ),
-        position: "bottom-right",
-        classNames: {
-          content: "flex flex-col gap-2",
-        },
-        style: {
-          "--border-radius": "calc(var(--radius)  + 4px)",
-        } as React.CSSProperties,
-      });
-    },
-  });
-
   return (
     <main className="max-w-screen">
       <MouseFollower />
@@ -159,87 +122,7 @@ function HomeComponent() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form
-              className="flex flex-col gap-2"
-              id="waitlist-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                form.handleSubmit();
-              }}
-            >
-              <div className="flex gap-1 *:flex-1">
-                <form.Field name="firstName">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label htmlFor={field.name}>First name</Label>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="john"
-                        type="text"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <p className="text-red-500" key={error?.message}>
-                          {error?.message}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </form.Field>
-
-                <form.Field name="lastName">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label htmlFor={field.name}>Last name</Label>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="doe"
-                        type="text"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <p className="text-red-500" key={error?.message}>
-                          {error?.message}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </form.Field>
-              </div>
-
-              <form.Field name="email">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Email</Label>
-                    <Input
-                      id={field.name}
-                      inputMode="email"
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="johndoe@example.com"
-                      type="email"
-                      value={field.state.value}
-                    />
-                    {field.state.meta.errors.map((error) => (
-                      <p className="text-red-500" key={error?.message}>
-                        {error?.message}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </form.Field>
-
-              <Button className="sm: ml-auto w-full py-3 sm:w-fit sm:px-16">
-                Join
-              </Button>
-            </form>
+            <WaitlistForm />
           </CardContent>
         </Card>
       </section>

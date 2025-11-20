@@ -1,8 +1,8 @@
-import { useForm } from "@tanstack/react-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, InfoIcon } from "lucide-react";
-
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, ChevronDown, InfoIcon } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 import { Button } from "@/components/ui/button";
@@ -19,15 +19,18 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/dice-combobox";
 import {
-  Field,
   FieldDescription,
-  FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
-  FieldSeparator,
-  FieldSet,
 } from "@/components/ui/field";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   InputGroup,
@@ -35,6 +38,20 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import {
+  Stepper,
+  StepperContent,
+  StepperDescription,
+  StepperIndicator,
+  StepperItem,
+  StepperList,
+  StepperNext,
+  StepperPrev,
+  type StepperProps,
+  StepperSeparator,
+  StepperTitle,
+  StepperTrigger,
+} from "@/components/ui/stepper";
 import {
   TagsInput,
   TagsInputInput,
@@ -47,8 +64,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const X_URL_REGEX = /^[a-zA-Z0-9_]+$/;
-const LINKEDIN_REGEX = /^[a-zA-Z0-9_-]+$/;
+const URL_REGEX =
+  /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/;
+const X_URL_REGEX =
+  /^(https?:\/\/(?:www\.)?(?:twitter|x)\.com\/)([A-Za-z0-9_]{1,15})$/i;
 
 export const Route = createFileRoute("/dashboard/products/new")({
   component: RouteComponent,
@@ -71,13 +90,19 @@ const productInformationForm = z
       .min(1, "Type description")
       .max(600, "Description cannot exceed 600 characters"),
     category: z.array(z.string()).min(1, "Please select at least one category"),
-    xUrl: z.string().refine((val) => val === "" || X_URL_REGEX.test(val), {
-      message: "Please enter a valid X profile username",
-    }),
+    xUrl: z.url("Please input x username").refine(
+      (val) => {
+        console.log(val);
+        return !val || X_URL_REGEX.test(val);
+      },
+      {
+        message: "Please enter a valid LinkedIn username",
+      }
+    ),
     linkedinUrl: z
       .string()
-      .refine((val) => !val || LINKEDIN_REGEX.test(val), {
-        message: "Please enter a valid LinkedIn username",
+      .refine((val) => !val || URL_REGEX.test(val), {
+        message: "Please enter a valid LinkedIn company name",
       })
       .or(z.literal("")),
     isOpenSource: z.boolean(),
@@ -117,26 +142,46 @@ const productFormSchema = z.object({
   }),
 });
 
-// type NewProductForm = z.infer<typeof productFormSchema>;
+type NewProductForm = z.infer<typeof productFormSchema>;
 
-const formCollection = [
+// const formCollection = [
+//   {
+//     key: "get started",
+//     step: 1,
+//   },
+//   {
+//     key: "product information",
+//     step: 2,
+//   },
+//   {
+//     key: "product confirmation",
+//     step: 3,
+//   },
+// ] as const;
+
+const formSteps = [
   {
-    key: "get started",
-    step: 1,
+    value: "get-started",
+    title: "Get Started",
+    description: "Provide a concise information about your project",
+    fields: ["getStarted.url", "getStarted.isDev"] as const,
   },
   {
-    key: "product information",
-    step: 2,
+    value: "product-information",
+    title: "Product Information",
+    description: "Details about your products",
+    fields: ["firstName", "lastName", "bio"] as const,
   },
   {
-    key: "product confirmation",
-    step: 3,
+    value: "review",
+    title: "Review",
+    description: "Review your information",
+    fields: [] as const,
   },
 ] as const;
-type FormStep = (typeof formCollection)[number];
 
 function RouteComponent() {
-  const form = useForm({
+  const form = useForm<NewProductForm>({
     defaultValues: {
       getStarted: {
         url: "https://",
@@ -156,43 +201,27 @@ function RouteComponent() {
         name: "",
       },
     },
-    validators: {
-      onSubmit: productFormSchema,
-      onDynamic: productFormSchema
-    },
-
-    onSubmit: ({ value }) => {
-      toast("You submitted the following values:", {
-        description: (
-          <pre className="mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground">
-            <code>{JSON.stringify(value, null, 2)}</code>
-          </pre>
-        ),
-        position: "bottom-right",
-        classNames: {
-          content: "flex flex-col gap-2",
-        },
-        style: {
-          "--border-radius": "calc(var(--radius)  + 4px)",
-        } as React.CSSProperties,
-      });
-    },
+    resolver: zodResolver(productFormSchema),
   });
 
-  const [formStep, setFormStep] = useState<FormStep | undefined>(
-    formCollection[0]
+  const [step, setStep] = useState("get-started");
+  const stepIndex = formSteps.findIndex(
+    (currentStep) => currentStep.value === step
   );
+
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isOpenSourced, setIsOpenSourced] = useState(false);
 
   // Validate current step before proceeding
-  const validateStep = async (step: number): Promise<boolean> => {
+  const validateStep = (step: number): boolean => {
     if (step === 1) {
       // Validate getStarted section
       const result = getStartedForm.safeParse(form.state.values.getStarted);
       if (!result.success) {
         // Trigger validation errors
         form.validateAllFields("change");
+        form.handleSubmit();
+
         return false;
       }
       return true;
@@ -203,9 +232,12 @@ function RouteComponent() {
       const result = productInformationForm.safeParse(
         form.state.values.productInformation
       );
+
       if (!result.success) {
         // Trigger validation errors
         form.validateAllFields("change");
+        form.handleSubmit();
+
         return false;
       }
       return true;
@@ -229,18 +261,49 @@ function RouteComponent() {
     return false;
   };
 
-  const handleProceed = async () => {
+  const onValidate: NonNullable<StepperProps["onValidate"]> = useCallback(
+    async (_value, direction) => {
+      if (direction === "prev") return true;
+
+      const stepData = formSteps.find(
+        (currentStep) => currentStep.value === step
+      );
+
+      if (!stepData) return true;
+      const isValid = await form.trigger(stepData.fields);
+      console.log(isValid);
+
+      if (!isValid) {
+        toast.info("Please complete all required fields to continue");
+      }
+
+      return isValid;
+    },
+    [form, step]
+  );
+
+  const onSubmit = (value: NewProductForm) => {
+    toast("You submitted the following values:", {
+      description: (
+        <pre className="mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground">
+          <code>{JSON.stringify(value, null, 2)}</code>
+        </pre>
+      ),
+    });
+  };
+
+  const handleProceed = () => {
     if (!formStep) return;
 
     setIsTransitioning(true);
     try {
-      const isValid = await validateStep(formStep.step);
+      const isValid = validateStep(formStep.step);
 
-      setFormStep;
+      // setFormStep();
 
       if (isValid) {
         if (formStep.step < formCollection.length) {
-          setFormStep(formCollection[formStep.step + 1]);
+          setFormStep(formCollection[formStep.step]);
         }
       } else {
         // Show error toast if validation fails
@@ -260,9 +323,9 @@ function RouteComponent() {
   };
 
   return (
-    <main className="grid min-h-screen grid-cols-5 gap-0">
-      <section className="col-span-5 min-h-screen md:col-span-3">
-        <div className="sticky top-14 flex min-h-10 items-center justify-end border-t *:font-light">
+    <main className="min-h-screen gap-0">
+      <section className="min-h-screen">
+        {/* <div className="sticky top-14 flex min-h-10 items-center justify-end border-t *:font-light">
           <div className="flex size-fit items-center gap-1 bg-sidebar px-2 py-3 *:text-xs">
             {formStep && formStep.step > 1 && (
               <Button
@@ -278,97 +341,172 @@ function RouteComponent() {
               {formStep?.step}/{formCollection.length}
             </span>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex flex-col gap-2 px-2 py-3">
-          <form
-            className="mt-4 flex flex-col gap-2 sm:max-w-sm"
-            id="new-product-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
-            }}
-          >
-            {formStep?.step === 1 && (
-              <div className="flex flex-col gap-2">
-                <h1 className="text-3xl sm:text-4xl">Submit a product</h1>
-                <p className="font-light text-xs sm:text-sm">
-                  Have you stumbled upon something awesome? Or maybe you've been
-                  working hard on your own creation? You've landed in the right
-                  spot to spread the news! Take a deep breath and jump into the
-                  steps.
-                </p>
+          <Form {...form}>
+            <form
+              className="mt-4 flex flex-col gap-2"
+              id="new-product-form"
+              onSubmit={form.handleSubmit(onSubmit)}
+            >
+              <Stepper
+                onValidate={onValidate}
+                onValueChange={setStep}
+                orientation="vertical"
+                value={step}
+              >
+                <StepperList>
+                  {formSteps.map((step) => (
+                    <StepperItem key={step.value} value={step.value}>
+                      <StepperTrigger className="not-last:pb-6">
+                        <StepperIndicator />
+                        <div className="flex flex-col gap-1">
+                          <StepperTitle>{step.title}</StepperTitle>
+                          <StepperDescription>
+                            {step.description}
+                          </StepperDescription>
+                        </div>
+                      </StepperTrigger>
+                      <StepperSeparator className="-order-1 -translate-x-1/2 -z-10 absolute inset-y-0 top-5 left-3.5 h-full" />
+                    </StepperItem>
+                  ))}
+                </StepperList>
 
-                <FieldGroup className="mt-5">
-                  <form.Field name="getStarted.url">
-                    {(field) => (
-                      <Field data-invalid={field.state.meta.errors.length > 0}>
-                        <FieldLabel
-                          className="text-xs sm:text-sm"
-                          htmlFor={field.name}
-                        >
-                          Product link
-                        </FieldLabel>
+                <div className="flex flex-col space-y-8">
+                  <StepperContent
+                    className="flex max-w-md flex-col gap-2"
+                    value="get-started"
+                  >
+                    <h1 className="text-3xl sm:text-4xl">Submit a product</h1>
+                    <p className="font-light text-xs sm:text-sm">
+                      Have you stumbled upon something awesome? Or maybe you've
+                      been working hard on your own creation? You've landed in
+                      the right spot to spread the news! Take a deep breath and
+                      jump into the steps.
+                    </p>
 
-                        <InputGroup>
-                          <InputGroupAddon>
-                            <InputGroupText>https://</InputGroupText>
-                          </InputGroupAddon>
-                          <InputGroupInput
-                            aria-invalid={field.state.meta.errors.length > 0}
-                            className="pl-0.5!"
-                            id={field.name}
-                            inputMode="url"
-                            onBlur={field.handleBlur}
-                            onChange={(e) =>
-                              field.handleChange(`https://${e.target.value}`)
-                            }
-                            placeholder="dealort.com"
-                          />
-                          <InputGroupAddon align="inline-end">
-                            <InputGroupText>.com</InputGroupText>
-                          </InputGroupAddon>
-                        </InputGroup>
-                        <FieldError errors={field.state.meta.errors} />
-                      </Field>
+                    <FieldGroup className="mt-5">
+                      <FormField
+                        control={form.control}
+                        name="getStarted.url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <InputGroup>
+                                <InputGroupAddon>
+                                  <InputGroupText>https://</InputGroupText>
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                  className="pl-0.5!"
+                                  id={field.name}
+                                  inputMode="url"
+                                  onBlur={field.onBlur}
+                                  onChange={(e) =>
+                                    field.onChange(`https://${e.target.value}`)
+                                  }
+                                  placeholder="dealort"
+                                />
+                                <InputGroupAddon align="inline-end">
+                                  <InputGroupText>.com</InputGroupText>
+                                </InputGroupAddon>
+                              </InputGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* <form.Field name="getStarted.isDev">
+                      {(field) => (
+                        <Field orientation="horizontal">
+                          <FieldLabel
+                            className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950"
+                            htmlFor={field.name}
+                          >
+                            <Checkbox
+                              checked={field.state.value}
+                              className="h-4 w-4"
+                              id={field.name}
+                              name={field.name}
+                              onCheckedChange={(checked) =>
+                                field.handleChange(checked === true)
+                              }
+                            />
+
+                            <div className="flex flex-col gap-1">
+                              <p className="text-sm">
+                                is this product still in development?
+                              </p>
+                              <FieldDescription className="font-light text-xs">
+                                Check the box if your product is not a fully
+                                production ready software.
+                              </FieldDescription>
+                            </div>
+                            <FieldError errors={field.state.meta.errors} />
+                          </FieldLabel>
+                        </Field>
+                      )}
+                    </form.Field> */}
+
+                      <FormField
+                        control={form.control}
+                        name="getStarted.isDev"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  className="h-4 w-4"
+                                  id={field.name}
+                                  name={field.name}
+                                  onCheckedChange={(checked) =>
+                                    field.onChange(checked === true)
+                                  }
+                                />
+                              </FormControl>
+
+                              <div className="flex flex-col gap-1">
+                                <p className="text-sm">
+                                  is this product still in development?
+                                </p>
+                                <FieldDescription className="font-light text-xs">
+                                  Check the box if your product is not a fully
+                                  production ready software.
+                                </FieldDescription>
+                              </div>
+                            </FormLabel>
+
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </FieldGroup>
+                  </StepperContent>
+                  <div className="mt-4 flex justify-between">
+                    <StepperPrev asChild>
+                      <Button variant="outline">
+                        <ArrowLeft />
+                      </Button>
+                    </StepperPrev>
+                    <div className="text-muted-foreground text-sm">
+                      Step {stepIndex + 1} of {formSteps.length}
+                    </div>
+                    {stepIndex === formSteps.length - 1 ? (
+                      <Button type="submit">Complete</Button>
+                    ) : (
+                      <StepperNext asChild>
+                        <Button>
+                          <ArrowRight />
+                        </Button>
+                      </StepperNext>
                     )}
-                  </form.Field>
+                  </div>
+                </div>
 
-                  <form.Field name="getStarted.isDev">
-                    {(field) => (
-                      <Field orientation="horizontal">
-                        <Checkbox
-                          checked={field.state.value}
-                          className="h-4 w-4"
-                          id={field.name}
-                          name={field.name}
-                          onCheckedChange={(checked) =>
-                            field.handleChange(checked === true)
-                          }
-                        />
-                        <FieldLabel
-                          className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950"
-                          htmlFor={field.name}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <p className="text-sm">
-                              is this product still in development?
-                            </p>
-                            <FieldDescription className="font-light text-xs">
-                              Check the box if your product is not a fully
-                              production ready software.
-                            </FieldDescription>
-                          </div>
-                          <FieldError errors={field.state.meta.errors} />
-                        </FieldLabel>
-                      </Field>
-                    )}
-                  </form.Field>
-                </FieldGroup>
-              </div>
-            )}
-
-            {formStep?.step === 2 && (
+                {/* {formStep?.step === 2 && (
               <div>
                 <div className="flex flex-col gap-2">
                   <h1 className="text-3xl sm:text-4xl">
@@ -482,27 +620,28 @@ function RouteComponent() {
                             >
                               X account of the project
                             </FieldLabel>
-                            <div className="flex items-center">
-                              <span className="h-full rounded-s-lg border bg-sidebar px-1 py-2.5 text-xs shadow-sm">
-                                x.com/@
-                              </span>
-                              <Input
+
+                            <InputGroup>
+                              <InputGroupAddon>
+                                <InputGroupText>x.com/</InputGroupText>
+                              </InputGroupAddon>
+                              <InputGroupInput
                                 aria-invalid={
                                   field.state.meta.errors.length > 0
                                 }
-                                className="rounded-s-none"
+                                className="pl-0.5!"
                                 id={field.name}
                                 inputMode="text"
                                 name={field.name}
                                 onBlur={field.handleBlur}
                                 onChange={(e) =>
-                                  field.handleChange(e.target.value)
+                                  field.handleChange(
+                                    `https://x.com/${e.target.value}`
+                                  )
                                 }
-                                placeholder="username"
-                                type="text"
-                                value={field.state.value}
+                                placeholder="dealort"
                               />
-                            </div>
+                            </InputGroup>
                             <FieldError errors={field.state.meta.errors} />
                           </Field>
                         )}
@@ -519,27 +658,30 @@ function RouteComponent() {
                             >
                               Linkedin (optional)
                             </FieldLabel>
-                            <div className="flex items-center">
-                              <span className="h-full rounded-s-lg border bg-sidebar px-1 py-2.5 text-xs shadow-sm">
-                                linkedin.com/company/
-                              </span>
-                              <Input
+
+                            <InputGroup>
+                              <InputGroupAddon>
+                                <InputGroupText>
+                                  linkedin.com/company/
+                                </InputGroupText>
+                              </InputGroupAddon>
+                              <InputGroupInput
                                 aria-invalid={
                                   field.state.meta.errors.length > 0
                                 }
-                                className="rounded-s-none"
+                                className="pl-0.5!"
                                 id={field.name}
                                 inputMode="text"
                                 name={field.name}
                                 onBlur={field.handleBlur}
                                 onChange={(e) =>
-                                  field.handleChange(e.target.value)
+                                  field.handleChange(
+                                    `https://linkedin.com/company/${e.target.value}`
+                                  )
                                 }
-                                placeholder="company-name"
-                                type="text"
-                                value={field.state.value}
+                                placeholder="dealort"
                               />
-                            </div>
+                            </InputGroup>
                             <FieldError errors={field.state.meta.errors} />
                           </Field>
                         )}
@@ -583,21 +725,27 @@ function RouteComponent() {
                                 >
                                   Github, Gitlab or Bitbucket
                                 </FieldLabel>
-                                <Input
-                                  aria-invalid={
-                                    field.state.meta.errors.length > 0
-                                  }
-                                  id={field.name}
-                                  inputMode="url"
-                                  name={field.name}
-                                  onBlur={field.handleBlur}
-                                  onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                  }
-                                  placeholder="https://www.dealort.com"
-                                  type="url"
-                                  value={field.state.value}
-                                />
+                                <InputGroup>
+                                  <InputGroupAddon>
+                                    <InputGroupText>https://</InputGroupText>
+                                  </InputGroupAddon>
+                                  <InputGroupInput
+                                    aria-invalid={
+                                      field.state.meta.errors.length > 0
+                                    }
+                                    className="pl-0.5!"
+                                    id={field.name}
+                                    inputMode="text"
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                      field.handleChange(
+                                        `https://${e.target.value}`
+                                      )
+                                    }
+                                    placeholder="dealort"
+                                  />
+                                </InputGroup>
                                 <FieldError errors={field.state.meta.errors} />
                               </Field>
                             )}
@@ -732,35 +880,37 @@ function RouteComponent() {
                   </form.Field>
                 </div>
               </div>
-            )}
+            )} */}
 
-            <div>
-              <Button
-                className="mt-4 size-fit w-full rounded-full px-16"
-                disabled={isTransitioning}
-                onClick={
-                  formStep?.step === 3
-                    ? () => form.handleSubmit()
-                    : handleProceed
-                }
-                type={formStep?.step === 3 ? "submit" : "button"}
-              >
-                {(() => {
-                  if (isTransitioning) {
-                    return "Loading...";
+                {/* <div>
+                <Button
+                  className="mt-4 size-fit w-full rounded-full px-16"
+                  disabled={isTransitioning}
+                  onClick={
+                    formStep?.step === 3
+                      ? () => form.handleSubmit()
+                      : handleProceed
                   }
-                  if (formStep && formStep.step < 3) {
-                    return "Next";
-                  }
-                  return "Submit";
-                })()}
-              </Button>
-            </div>
-          </form>
+                  type={formStep?.step === 3 ? "submit" : "button"}
+                >
+                  {(() => {
+                    if (isTransitioning) {
+                      return "Loading...";
+                    }
+                    if (formStep && formStep.step < 3) {
+                      return "Next";
+                    }
+                    return "Submit";
+                  })()}
+                </Button>
+              </div> */}
+              </Stepper>
+            </form>
+          </Form>
         </div>
       </section>
 
-      <aside
+      {/* <aside
         className="col-span-2 hidden items-center justify-center overflow-x-hidden bg-sidebar bg-size-[22px_32px] md:flex"
         style={{
           backgroundImage:
@@ -768,7 +918,7 @@ function RouteComponent() {
         }}
       >
         <h1 className="text-8xl text-foreground opacity-5">Dealort</h1>
-      </aside>
+      </aside> */}
     </main>
   );
 }
