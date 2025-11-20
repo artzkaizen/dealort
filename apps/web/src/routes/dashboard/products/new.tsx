@@ -19,9 +19,13 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/dice-combobox";
 import {
+  Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
 } from "@/components/ui/field";
 import {
   Form,
@@ -170,7 +174,16 @@ const formSteps = [
     value: "product-information",
     title: "Product Information",
     description: "Details about your products",
-    fields: ["firstName", "lastName", "bio"] as const,
+    fields: [
+      "productInformation.name",
+      "productInformation.tagline",
+      "productInformation.description",
+      "productInformation.category",
+      "productInformation.xUrl",
+      "productInformation.linkedinUrl",
+      "productInformation.isOpenSource",
+      "productInformation.sourceCodeUrl",
+    ] as const,
   },
   {
     value: "review",
@@ -392,7 +405,7 @@ function RouteComponent() {
                         name="getStarted.url"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Link to product</FormLabel>
                             <FormControl>
                               <InputGroup>
                                 <InputGroupAddon>
@@ -408,47 +421,15 @@ function RouteComponent() {
                                   }
                                   placeholder="dealort"
                                 />
-                                <InputGroupAddon align="inline-end">
+                                {/* <InputGroupAddon align="inline-end">
                                   <InputGroupText>.com</InputGroupText>
-                                </InputGroupAddon>
+                                </InputGroupAddon> */}
                               </InputGroup>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
-                      {/* <form.Field name="getStarted.isDev">
-                      {(field) => (
-                        <Field orientation="horizontal">
-                          <FieldLabel
-                            className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950"
-                            htmlFor={field.name}
-                          >
-                            <Checkbox
-                              checked={field.state.value}
-                              className="h-4 w-4"
-                              id={field.name}
-                              name={field.name}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                            />
-
-                            <div className="flex flex-col gap-1">
-                              <p className="text-sm">
-                                is this product still in development?
-                              </p>
-                              <FieldDescription className="font-light text-xs">
-                                Check the box if your product is not a fully
-                                production ready software.
-                              </FieldDescription>
-                            </div>
-                            <FieldError errors={field.state.meta.errors} />
-                          </FieldLabel>
-                        </Field>
-                      )}
-                    </form.Field> */}
 
                       <FormField
                         control={form.control}
@@ -485,6 +466,268 @@ function RouteComponent() {
                       />
                     </FieldGroup>
                   </StepperContent>
+
+                  <StepperContent
+                    className="flex max-w-md flex-col gap-2"
+                    value="product-information"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <h1 className="text-xl sm:text-2xl">
+                        Describe your project
+                      </h1>
+                      <p className="font-light text-xs sm:text-sm">
+                        We need a concise information about your product
+                      </p>
+                    </div>
+
+                    <FieldGroup className="mt-6">
+                      <FieldSet>
+                        <FormField
+                          control={form.control}
+                          name="productInformation.name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <TextField
+                                  inputType="input"
+                                  label="Name of Product"
+                                  maxLength={40}
+                                  name={field.name}
+                                  onBlur={field.onBlur}
+                                  onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>
+                                  ) => field.onChange(e.target.value)}
+                                  placeholder="The name of the product you would launch "
+                                  value={field.value}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="productInformation.tagline"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <TextField
+                                  inputType="input"
+                                  label="Tagline"
+                                  maxLength={60}
+                                  name={field.name}
+                                  onBlur={field.onBlur}
+                                  onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>
+                                  ) => field.onChange(e.target.value)}
+                                  placeholder="A short intro about your project"
+                                  value={field.value}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="productInformation.description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <TextField
+                                  infoTooltip="Describe your project in detail, what it is all about and what makes you stand out from the crowd"
+                                  inputType="textarea"
+                                  label="Description"
+                                  maxLength={600}
+                                  name={field.name}
+                                  onBlur={field.onBlur}
+                                  onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>
+                                  ) => field.onChange(e.target.value)}
+                                  placeholder="Describe your product in details (use formal tone devoid of stickers and emojis)"
+                                  value={field.value}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="productInformation.category"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <CategoriesCombobox
+                                  name={field.name}
+                                  onBlur={field.onBlur}
+                                  onChange={(value) => field.onChange(value)}
+                                  value={field.value}
+                                />
+                              </FormControl>
+                              <FormMessage className="mt-4" />
+                            </FormItem>
+                          )}
+                        />
+                      </FieldSet>
+                      <FieldSeparator />
+
+                      <FieldSet>
+                        <FieldLegend className="text-xl sm:text-3xl">
+                          Links
+                        </FieldLegend>
+
+                        <FormField
+                          control={form.control}
+                          name="productInformation.xUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel
+                                className="text-xs sm:text-sm"
+                                htmlFor={field.name}
+                              >
+                                X account of the project
+                              </FormLabel>
+                              <FormControl>
+                                <InputGroup>
+                                  <InputGroupAddon>
+                                    <InputGroupText>x.com/</InputGroupText>
+                                  </InputGroupAddon>
+                                  <InputGroupInput
+                                    className="pl-0.5!"
+                                    id={field.name}
+                                    inputMode="text"
+                                    name={field.name}
+                                    onBlur={field.onBlur}
+                                    onChange={(e) =>
+                                      field.onChange(
+                                        `https://x.com/${e.target.value}`
+                                      )
+                                    }
+                                    placeholder="dealort"
+                                  />
+                                </InputGroup>
+                              </FormControl>
+                              <FormMessage className="mt-4" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="productInformation.linkedinUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel
+                                className="text-xs sm:text-sm"
+                                htmlFor={field.name}
+                              >
+                                Linkedin (optional)
+                              </FormLabel>
+                              <FormControl>
+                                <InputGroup>
+                                  <InputGroupAddon>
+                                    <InputGroupText>
+                                      linkedin.com/company/
+                                    </InputGroupText>
+                                  </InputGroupAddon>
+                                  <InputGroupInput
+                                    className="pl-0.5!"
+                                    id={field.name}
+                                    inputMode="text"
+                                    name={field.name}
+                                    onBlur={field.onBlur}
+                                    onChange={(e) =>
+                                      field.onChange(
+                                        `https://linkedin.com/company/${e.target.value}`
+                                      )
+                                    }
+                                    placeholder="dealort"
+                                  />
+                                </InputGroup>
+                              </FormControl>
+                              <FormMessage className="mt-4" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <Field className="flex flex-col gap-2 rounded-lg border p-3 hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                          <FormField
+                            control={form.control}
+                            name="productInformation.isOpenSource"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      className="h-4 w-4"
+                                      id={field.name}
+                                      name={field.name}
+                                      onCheckedChange={(checked) => {
+                                        setIsOpenSourced(checked === true);
+                                        field.onChange(checked === true);
+                                      }}
+                                    />
+                                  </FormControl>
+
+                                  <div className="flex flex-col gap-1">
+                                    <p className="text-sm">
+                                      is this product still in development?
+                                    </p>
+                                    <FieldDescription className="font-light text-xs">
+                                      Check the box if your product is not a
+                                      fully production ready software.
+                                    </FieldDescription>
+                                  </div>
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                          />
+
+                          {isOpenSourced && (
+                            <FormField
+                              control={form.control}
+                              name="productInformation.sourceCodeUrl"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-extralight">
+                                    Github, Gitlab, Bitbucket...
+                                  </FormLabel>
+                                  <FormControl>
+                                    <InputGroup>
+                                      <InputGroupAddon>
+                                        <InputGroupText>
+                                          https://
+                                        </InputGroupText>
+                                      </InputGroupAddon>
+                                      <InputGroupInput
+                                        className="pl-0.5!"
+                                        id={field.name}
+                                        inputMode="url"
+                                        onBlur={field.onBlur}
+                                        onChange={(e) =>
+                                          field.onChange(
+                                            `https://${e.target.value}`
+                                          )
+                                        }
+                                        placeholder="repository remote url"
+                                      />
+                                    </InputGroup>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </Field>
+                      </FieldSet>
+                    </FieldGroup>
+                  </StepperContent>
+
                   <div className="mt-4 flex justify-between">
                     <StepperPrev asChild>
                       <Button variant="outline">
@@ -518,89 +761,7 @@ function RouteComponent() {
                 </div>
 
                 <FieldGroup className="mt-6">
-                  <FieldSet>
-                    <FieldGroup>
-                      <form.Field name="productInformation.name">
-                        {(field) => (
-                          <Field
-                            data-invalid={field.state.meta.errors.length > 0}
-                          >
-                            <TextField
-                              inputType="input"
-                              label="Name of Product"
-                              maxLength={40}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => field.handleChange(e.target.value)}
-                              placeholder="The name of the product you would launch "
-                              value={field.state.value}
-                            />
-                            <FieldError errors={field.state.meta.errors} />
-                          </Field>
-                        )}
-                      </form.Field>
-
-                      <form.Field name="productInformation.tagline">
-                        {(field) => (
-                          <div className="space-y-2">
-                            <TextField
-                              infoTooltip="A short formal description"
-                              inputType="input"
-                              label="Tagline"
-                              maxLength={60}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => field.handleChange(e.target.value)}
-                              placeholder="The name of the product you would launch "
-                              value={field.state.value}
-                            />
-                            <FieldError errors={field.state.meta.errors} />
-                          </div>
-                        )}
-                      </form.Field>
-
-                      <form.Field name="productInformation.description">
-                        {(field) => (
-                          <div className="space-y-2">
-                            <TextField
-                              infoTooltip="Describe your project in detail, what it is all about and what makes you stand out from the crowd"
-                              inputType="textarea"
-                              label="Description"
-                              maxLength={600}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => field.handleChange(e.target.value)}
-                              placeholder="The name of the product you would launch "
-                              value={field.state.value}
-                            />
-                            <FieldError errors={field.state.meta.errors} />
-                          </div>
-                        )}
-                      </form.Field>
-
-                      <form.Field name="productInformation.category">
-                        {(field) => (
-                          <Field
-                            data-invalid={field.state.meta.errors.length > 0}
-                          >
-                            <CategoriesCombobox
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(value) => field.handleChange(value)}
-                              value={field.state.value}
-                            />
-                            <FieldError errors={field.state.meta.errors} />
-                          </Field>
-                        )}
-                      </form.Field>
-                    </FieldGroup>
-                  </FieldSet>
+                
 
                   <FieldSeparator />
 
