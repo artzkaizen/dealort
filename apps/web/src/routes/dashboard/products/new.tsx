@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronDown,
   CloudUploadIcon,
+  ExternalLinkIcon,
   InfoIcon,
   XIcon,
 } from "lucide-react";
@@ -261,11 +262,16 @@ const mediaForm = z.object({
       try {
         const { width, height } = await getImageDimensions(files[0]);
         console.log(await getImageDimensions(files[0]));
-        if (width !== 240 || height !== 240) {
+        if (
+          !(
+            (width === 240 && height === 240) ||
+            (width === 128 && height === 128)
+          )
+        ) {
           // Add a detailed error message to the Zod context
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Image must be exactly ${240}x${240} pixels. Found ${width}x${height}.`,
+            message: `Image must be exactly 240x240 or 128x128 pixels. Found ${width}x${height}.`,
           });
           return; // Stop further validation checks
         }
@@ -403,7 +409,7 @@ function RouteComponent() {
   };
 
   return (
-    <main className="min-h-screen gap-0">
+    <main className="grid min-h-screen gap-0 lg:grid-cols-2">
       <section className="min-h-screen">
         <div className="flex flex-col gap-2 px-2 py-3">
           <Form {...form}>
@@ -418,7 +424,7 @@ function RouteComponent() {
                 orientation="horizontal"
                 value={step}
               >
-                <StepperList className="">
+                <StepperList className="w-full scale-90 flex-wrap">
                   {formSteps.map((step) => (
                     <StepperItem key={step.value} value={step.value}>
                       <StepperTrigger>
@@ -437,7 +443,7 @@ function RouteComponent() {
 
                 <div className="flex flex-col space-y-8">
                   <StepperContent
-                    className="flex max-w-md flex-col gap-2"
+                    className="flex flex-col gap-2"
                     value="get-started"
                   >
                     <h1 className="text-3xl sm:text-4xl">Submit a product</h1>
@@ -515,7 +521,7 @@ function RouteComponent() {
                   </StepperContent>
 
                   <StepperContent
-                    className="flex max-w-md flex-col gap-2"
+                    className="flex flex-col gap-2"
                     value="product-information"
                   >
                     <div className="flex flex-col gap-2">
@@ -774,10 +780,7 @@ function RouteComponent() {
                     </FieldGroup>
                   </StepperContent>
 
-                  <StepperContent
-                    className="flex max-w-md flex-col gap-2"
-                    value="media"
-                  >
+                  <StepperContent className="flex flex-col gap-2" value="media">
                     <div className="mb-6 flex flex-col gap-2">
                       <h1 className="text-xl sm:text-2xl">Media and Images</h1>
                       <p className="font-light text-xs sm:text-sm">
@@ -814,8 +817,9 @@ function RouteComponent() {
                                   </div>
                                 </FileUploadDropzone>
 
-                                {field.value.map((file) => (
-                                  <FileUploadItem key={file.name} value={file}>
+                                {field.value.map((file, index) => (
+                                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                                  <FileUploadItem key={index} value={file}>
                                     <FileUploadItemPreview />
                                     <FileUploadItemMetadata />
                                     <FileUploadItemDelete asChild>
@@ -855,7 +859,7 @@ function RouteComponent() {
                               <FormLabel>Attachments</FormLabel>
                               <FormControl>
                                 <FileUpload
-                                  accept="image/*"
+                                  accept=".png, .jpg, .jpeg"
                                   maxFiles={3}
                                   maxSize={2 * 1024 * 1024}
                                   multiple
@@ -864,7 +868,10 @@ function RouteComponent() {
                                       message,
                                     });
                                   }}
-                                  onValueChange={field.onChange}
+                                  onValueChange={(val) => {
+                                    field.onChange(val);
+                                    console.log(form.formState.errors.media);
+                                  }}
                                   value={field.value}
                                 >
                                   <FileUploadDropzone className="flex-row flex-wrap border-dotted text-center">
@@ -875,9 +882,10 @@ function RouteComponent() {
                                     </div>
                                   </FileUploadDropzone>
                                   <FileUploadList>
-                                    {field.value?.map((file) => (
+                                    {field.value?.map((file, index) => (
                                       <FileUploadItem
-                                        key={file.name}
+                                        // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                                        key={index}
                                         value={file}
                                       >
                                         <FileUploadItemPreview />
@@ -902,7 +910,8 @@ function RouteComponent() {
 
                               <FormMessage />
                               <FormDescription>
-                                Optional and cannot select more than 3 images
+                                Optional [jpg, png] and cannot select more than
+                                3 images
                               </FormDescription>
                             </FormItem>
                           )}
@@ -912,11 +921,13 @@ function RouteComponent() {
                   </StepperContent>
 
                   <StepperContent
-                    className="flex max-w-md flex-col gap-2"
-                    value="media"
-                  />
+                    className="flex w-full flex-col gap-2"
+                    value="confirmation"
+                  >
+                    <ProductPreview values={form.getValues()} />
+                  </StepperContent>
 
-                  <div className="mt-4 flex max-w-md justify-between">
+                  <div className="mt-4 flex justify-between">
                     <StepperPrev asChild>
                       <Button type="button" variant="outline">
                         <ArrowLeft />
@@ -941,13 +952,12 @@ function RouteComponent() {
           </Form>
         </div>
       </section>
-      {/* <aside>
-        <div className="flex gap-1 flex-wrap">
-          <Avatar>
-            <AvatarImage src={form.}></AvatarImage>
-          </Avatar>
-        </div>
-      </aside> */}
+
+      {step !== "confirmation" && (
+        <aside className="max-lg:hidden">
+          <ProductPreview values={form.getValues()} />
+        </aside>
+      )}
     </main>
   );
 }
@@ -1149,11 +1159,6 @@ export function ProductPreview({ values }: PreviewProps) {
     ? getFilesUrls(values.media.gallery)
     : [];
 
-  // Helper for skeleton
-  // const Skeleton = ({ className = "" }: { className?: string }) => (
-  //   <Skeleton className={className} />
-  // );
-
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-lg border p-5">
       {/* Logo, Name, Tagline */}
@@ -1189,69 +1194,73 @@ export function ProductPreview({ values }: PreviewProps) {
       </div>
       {/* Links */}
       <div className="flex flex-col gap-1">
-        <div>
+        <div className="flex items-center gap-1">
           <span className="mr-2 font-medium text-muted-foreground text-xs">
             Product URL:
           </span>
           {values.getStarted.url ? (
             <a
-              className="text-primary underline"
+              className="flex gap-px text-primary/80 text-sm"
               href={values.getStarted.url}
               rel="noopener noreferrer"
               target="_blank"
             >
               {values.getStarted.url}
+              <ExternalLinkIcon className="size-4" />
             </a>
           ) : (
             <Skeleton className="inline-block h-4 w-36 rounded align-middle" />
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-1">
           <span className="mr-2 font-medium text-muted-foreground text-xs">
             X URL:
           </span>
           {values.productInformation.xUrl ? (
             <a
-              className="text-primary underline"
+              className="flex gap-px text-primary text-sm underline"
               href={values.productInformation.xUrl}
               rel="noopener noreferrer"
               target="_blank"
             >
               {values.productInformation.xUrl}
+              <ExternalLinkIcon className="size-4" />
             </a>
           ) : (
             <Skeleton className="inline-block h-4 w-24 rounded align-middle" />
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-1">
           <span className="mr-2 font-medium text-muted-foreground text-xs">
             LinkedIn URL:
           </span>
           {values.productInformation.linkedinUrl ? (
             <a
-              className="text-primary underline"
+              className="flex gap-px text-primary text-sm underline"
               href={values.productInformation.linkedinUrl}
               rel="noopener noreferrer"
               target="_blank"
             >
               {values.productInformation.linkedinUrl}
+              <ExternalLinkIcon className="size-4" />
             </a>
           ) : (
             <Skeleton className="inline-block h-4 w-24 rounded align-middle" />
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-1">
           <span className="mr-2 font-medium text-muted-foreground text-xs">
             Source Code:
           </span>
           {values.productInformation.sourceCodeUrl ? (
             <a
-              className="text-primary underline"
+              className="flex gap-px text-primary text-sm underline"
               href={values.productInformation.sourceCodeUrl}
               rel="noopener noreferrer"
               target="_blank"
             >
               {values.productInformation.sourceCodeUrl}
+              <ExternalLinkIcon className="size-4" />
             </a>
           ) : (
             <Skeleton className="inline-block h-4 w-28 rounded align-middle" />
