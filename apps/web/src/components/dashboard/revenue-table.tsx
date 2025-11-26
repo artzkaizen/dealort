@@ -153,7 +153,6 @@ const data = [
 
 // Remove implicit any warning for columns
 
-const pageCount = 1;
 type RevenueRow = (typeof data)[number];
 
 import { Suspense } from "react";
@@ -404,7 +403,7 @@ export function RevenueTable() {
   //   enableMultiRowSelection: true, // <-- Enable multi selection (Select All)
   // });
 
-  const { table, ...dataGridProps } = useDataGrid({
+  const { table } = useDataGrid({
     columns,
     data,
     onDataChange: (data) => {
