@@ -27,6 +27,29 @@ app.use(
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
+app.get("/", (c) => c.text("OK"));
+
+app.post("/sign-in/social", async (c) => {
+  console.log("reached");
+  try {
+    // const body = await c.req.parseBody();
+    // console.log("body", body);
+
+    // const response = await auth.api.signInSocial({
+    //   body: {
+    //     provider: "google",
+    //     // callbackURL: `${env.CORS_ORIGIN}/dashboard`,
+    //     // newUserCallbackURL: `${env.CORS_ORIGIN}/dashboard/profile`,
+    //   },
+    // });
+
+    console.log("response");
+  return c.text("gdvshgd");
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
@@ -70,19 +93,6 @@ app.use("/*", async (c, next) => {
   }
 
   await next();
-});
-
-app.get("/", (c) => c.text("OK"));
-
-app.post("/sign-in/social", (c) => {
-  const response = auth.api.signInSocial({
-    body: {
-      provider: "google",
-    },
-  });
-
-  console.log("response", response);
-  return c.json(response);
 });
 
 export default app;

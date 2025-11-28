@@ -6,21 +6,12 @@ import { RevenueTable } from "@/components/dashboard/revenue-table";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { useDashboardStore } from "@/stores/dashboard-store";
 
 export const Route = createFileRoute("/dashboard/")({
   component: RouteComponent,
-  // beforeLoad: async () => {
-  //   const session = await authClient.getSession();
-  //   // if (!session.data) {
-  //   //   redirect({
-  //   //     to: "/login",
-  //   //     throw: true,
-  //   //   });
-  //   // }
-  //   return { session };
-  // },
 });
 
 function DashboardSkeleton() {
@@ -83,19 +74,23 @@ function DashboardSkeleton() {
 }
 
 function RouteComponent() {
-  // const { session } = Route.useRouteContext();
-  //
+  const {
+    data: session,
+    isPending, //loading state
+  } = authClient.useSession();
+  const { user } = session || {};
   // const privateData = useQuery(orpc.privateData.queryOptions());
 
   const { analyticsDuration, setAnalyticsDuration } = useDashboardStore();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isPending);
 
-  // Simulate fetching/loading
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1400);
-    return () => clearTimeout(timer);
-  }, []);
+    setLoading(isPending);
+
+    // const timer = setTimeout(() => setLoading(false), 1400);
+    // return () => clearTimeout(timer);
+  }, [isPending]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -104,7 +99,9 @@ function RouteComponent() {
   return (
     <main className="px-2 py-5">
       <section className="flex flex-col gap-1">
-        <h1 className="font-bold text-2xl sm:text-4xl">Hi, Adegbemi</h1>
+        <h1 className="font-bold text-2xl sm:text-4xl">
+          Hi, {user?.name.split(" ")[0]}
+        </h1>
         <p className="font-extralight text-xs sm:text-sm">
           Welcome back; want to launch something new today? There is no better
           tomorrow without a good today.

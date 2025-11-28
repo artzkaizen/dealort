@@ -26,13 +26,19 @@ function RouteComponent() {
   // );
 
   async function requestGoogleAuth() {
+    try {
+      const data = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: `${window.location.origin}/dashboard`,
+        newUserCallbackURL: `${window.location.origin}/dashboard/profile`,
+      });
+
+      console.log(data);
+    } catch (error) {
+      console.error(error);
+    }
+
     console.log("clicked");
-
-    const data = await authClient.signIn.social({
-      provider: "google",
-    });
-
-    console.log(data);
   }
 
   return (

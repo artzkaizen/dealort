@@ -60,6 +60,9 @@ const dashboardLinks = [
 
 // User profile component with tooltip for logout and settings
 function UserProfile() {
+  const { data: session, isPending } = authClient.useSession();
+  const { user } = session || {};
+
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
@@ -80,27 +83,53 @@ function UserProfile() {
     navigate({ to: "/dashboard" });
   };
 
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-between border-t px-3 py-2">
+        <div
+          className={cn(
+            "flex w-full max-w-[94%] items-center gap-3",
+            isCollapsed && "max-w-full justify-center"
+          )}
+        >
+          <div className="size-8 animate-pulse rounded-full bg-muted" />
+          {!isCollapsed && (
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-2 w-32 animate-pulse rounded bg-muted" />
+            </div>
+          )}
+        </div>
+        {!isCollapsed && (
+          <div className="h-4 w-4 animate-pulse rounded bg-muted" />
+        )}
+      </div>
+    );
+  }
+
   return (
     <Popover>
       <PopoverTrigger asChild>
         <div className="flex items-center justify-between border-t">
           <div
             className={cn(
-              "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors",
-              isCollapsed && "justify-center px-2"
+              "flex w-full max-w-[94%] cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors",
+              isCollapsed && "max-w-full justify-center px-2"
             )}
           >
             <Avatar className="size-8">
-              <AvatarImage alt="User" src="" />
+              <AvatarImage alt="User" src={user?.image || ""} />
               <AvatarFallback>
                 <User className="size-4" />
               </AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <div className="flex flex-1 flex-col overflow-hidden">
-                <span className="truncate font-medium text-sm">User Name</span>
+                <span className="truncate font-medium text-sm">
+                  {user?.name}
+                </span>
                 <span className="truncate text-muted-foreground text-xs">
-                  user@example.com
+                  {user?.email}
                 </span>
               </div>
             )}

@@ -18,11 +18,12 @@ export const auth = betterAuth<BetterAuthOptions>({
       prompt: "consent",
       clientId: env.GOOGLE_CLIENT_ID as string,
       clientSecret: env.GOOGLE_CLIENT_SECRET as string,
+      // redirectURI: `${env.CORS_ORIGIN}/dashboard`,
     },
     github: {
       clientId: env.GITHUB_CLIENT_ID as string,
       clientSecret: env.GITHUB_CLIENT_SECRET as string,
-    },
+    }, 
   },
   advanced: {
     defaultCookieAttributes: {
