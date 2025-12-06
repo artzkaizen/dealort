@@ -1,5 +1,5 @@
-import { createFileRoute, useLoaderData } from "@tanstack/react-router";
-import { UserIcon } from "lucide-react";
+import { createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
+import { ExternalLink, UserIcon } from "lucide-react";
 import { UAParser } from "ua-parser-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ function RouteComponent() {
           already setup.
         </p>
       </section>
+
       <section className="mt-5 flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -45,10 +46,13 @@ function RouteComponent() {
             </Avatar>
 
             <div className="flex flex-col gap-px">
-              <p className="font-medium text-sm sm:text-lg">{user?.name}</p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                {user?.email}
-              </p>
+              <p className="font-medium text-sm sm:text-lg">{user?.username}</p>
+              <Link
+                className="flex gap-1 text-muted-foreground text-xs sm:text-sm"
+                to={`/profile/${user?.username}`}
+              >
+                Visit Public Profile <ExternalLink className="size-4" />
+              </Link>
               <p className="text-[7px] text-muted-foreground sm:text-[9px]">
                 Joined since {formatDate(user?.createdAt)}
               </p>
@@ -59,7 +63,9 @@ function RouteComponent() {
             {user?.emailVerified ? "Verified" : "Unverified"}
           </Badge>
         </div>
+
         <Separator className="my-2" />
+
         <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
           <div className="flex flex-col gap-px">
             <h3 className="font-medium text-xs sm:text-sm">
@@ -94,7 +100,7 @@ function RouteComponent() {
           <div className="flex flex-col gap-px">
             <h3 className="font-medium text-xs sm:text-sm">Preferred Theme</h3>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              {user.theme}
+              {user?.theme}
             </p>
           </div>
 

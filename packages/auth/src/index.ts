@@ -2,27 +2,20 @@ import { passkey } from "@better-auth/passkey";
 import { db } from "@dealort/db";
 import * as schema from "@dealort/db/schema/auth";
 import { env } from "@dealort/utils/env";
-import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { twoFactor, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { sendWelcomeEmail } from "./emails/service";
 
-export const auth = betterAuth<BetterAuthOptions >({
+const authConfig: BetterAuthOptions = {
   appName: "Dealort",
   database: drizzleAdapter(db, {
     provider: "sqlite",
     schema,
   }),
   trustedOrigins: [env.CORS_ORIGIN],
-  // emailAndPassword: {
-  //   enabled: true,
-  //   requireEmailVerification: true,
-  // },
-  // emailVerification: {
-  //   sendOnSignUp: true,
-  // },
   user: {
     additionalFields: {
       theme: {
@@ -95,4 +88,9 @@ export const auth = betterAuth<BetterAuthOptions >({
   },
   // Email notifications (welcome & security warnings) are handled via middleware
   // in apps/server/src/index.ts which intercepts auth responses
-});
+};
+
+export const auth = betterAuth<BetterAuthOptions>(authConfig);
+
+// Export the auth configuration type for client-side type inference
+export type AuthConfig = typeof authConfig;
