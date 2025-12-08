@@ -35,17 +35,27 @@ export const Route = createFileRoute("/dashboard/settings/profile")({
 });
 
 const profileDetailsFormSchema = z.object({
-  name: z.string().min(3).max(20).optional(),
+  name: z
+    .string()
+    .min(3)
+    .max(15)
+    .transform((val) => val?.trim())
+    .optional(),
   username: z
     .string()
     .min(3)
-    .max(20)
+    .max(15)
     .regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/, {
       message:
         "Username must start with a letter and can only contain letters, numbers, dashes, and underscores",
     })
+    .transform((val: string) => val?.trim())
     .optional(),
-  bio: z.string().max(100).optional(),
+  bio: z
+    .string()
+    .max(100)
+    .transform((val) => val?.trim())
+    .optional(),
 });
 
 type ProfileDetailsForm = z.infer<typeof profileDetailsFormSchema>;
@@ -66,8 +76,32 @@ function RouteComponent() {
     },
   });
 
-  const onSubmit = (data: ProfileDetailsForm) => {
-    console.log(data);
+  const handleProfileInformationUpdate = async (data: ProfileDetailsForm) => {
+    const { data: usernameResponse } = await authClient.isUsernameAvailable({
+      username: data.username ?? "", // required
+    });
+
+    if (!usernameResponse?.available && data.username !== user?.username) {
+      toast.error("Username is not available");
+      return;
+    }
+
+    await authClient.updateUser(
+      {
+        name: data.name,
+        username: data.username,
+        bio: data.bio,
+      },
+      {
+        onError: () => {
+          toast.error("Failed to update profile information");
+        },
+        onSuccess: () => {
+          toast.success("Profile information updated successfully");
+          refetch();
+        },
+      }
+    );
   };
 
   return (
@@ -185,15 +219,15 @@ function RouteComponent() {
       </section>
 
       {/* Profile details section */}
-      <section className="">
+      <section>
         <Form {...detailsForm}>
           <form
             className="space-y-8"
-            onSubmit={detailsForm.handleSubmit(onSubmit)}
+            onSubmit={detailsForm.handleSubmit(handleProfileInformationUpdate)}
           >
             <div>
-              <h1 className="font-bold text-xl sm:text-2xl">Profile</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm">
+              <h1 className="font-bold text-xl sm:text-xl">Profile Details</h1>
+              <p className="text-muted-foreground text-xs">
                 Update your profile information
               </p>
             </div>
@@ -211,6 +245,20 @@ function RouteComponent() {
                         className="capitalize"
                         defaultValue={user?.name}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={detailsForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="lowercase" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -243,6 +291,12 @@ function RouteComponent() {
                 )}
               />
             </div>
+
+            <Button disabled={detailsForm.formState.isSubmitting} type="submit">
+              {detailsForm.formState.isSubmitting
+                ? "Saving..."
+                : "Save Changes"}
+            </Button>
           </form>
         </Form>
       </section>

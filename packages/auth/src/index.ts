@@ -12,6 +12,35 @@ import { sendWelcomeEmail } from "./emails/service";
 const validUsernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const numbersOnlyRegex = /^\d+$/;
 
+/**
+ * Generates a unique username for a user
+ * @param name - The name of the user
+ * @returns A unique username
+ */
+const generateUsername = (name: string) => {
+  let newName = "";
+  if (name.length > 10) {
+    newName =
+      name
+        .toLowerCase()
+        .replace(/ /g, "-")
+        .slice(0, 10)
+        .replace(/^-+|-+$/g, "") +
+      Math.random().toString(36).substring(2, 6).slice(0, 15);
+    return newName;
+  }
+
+  newName =
+    // The regex / /g matches all spaces, and replaces them with dashes (removes all spaces).
+    // The regex /^-+|-+$/g matches one or more dashes at the start (^-+) OR at the end (|-+$) of the string, and removes them.
+    name
+      .toLowerCase()
+      .replace(/ /g, "-")
+      .replace(/^-+|-+$/g, "") +
+    Math.random().toString(36).substring(2, 15).slice(0, 15);
+  return newName;
+};
+
 const authConfig: BetterAuthOptions = {
   appName: "Dealort",
   database: drizzleAdapter(db, {
@@ -44,9 +73,7 @@ const authConfig: BetterAuthOptions = {
       clientSecret: env.GOOGLE_CLIENT_SECRET as string,
       mapProfileToUser: (profile) => ({
         theme: "system",
-        username:
-          profile.name?.toLowerCase().replace(/ /g, "") +
-          Math.random().toString(36).substring(2, 15),
+        username: generateUsername(profile.name),
         bio: "",
       }),
     },
@@ -55,9 +82,7 @@ const authConfig: BetterAuthOptions = {
       clientSecret: env.GITHUB_CLIENT_SECRET as string,
       mapProfileToUser: (profile) => ({
         theme: "system",
-        username:
-          profile.name?.toLowerCase().replace(/ /g, "") +
-          Math.random().toString(36).substring(2, 15),
+        username: generateUsername(profile.name),
         bio: "",
       }),
     },
@@ -75,11 +100,18 @@ const authConfig: BetterAuthOptions = {
     username({
       usernameValidator: (username: string) => {
         if (username.length < 3) return false;
+        if (username.length > 15) return false;
         // Disallow all chars except letters, numbers, dashes, and underscores
         if (!validUsernameRegex.test(username)) return false;
         // Cannot be only numbers
         if (numbersOnlyRegex.test(username)) return false;
         return true;
+      },
+      usernameNormalization(username) {
+        return username
+          .toLowerCase()
+          .replace(/ /g, "-")
+          .replace(/^-+|-+$/g, "");
       },
     }),
     tanstackStartCookies(),
