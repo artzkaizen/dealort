@@ -262,7 +262,7 @@ function MainContent({ isDark }: { isDark: boolean }) {
         <div
           className={cn(
             "h-6 w-16 rounded",
-            isDark ? "bg-blue-500" : "bg-blue-600"
+            isDark ? "bg-primary-foreground" : "bg-primary"
           )}
         />
       </div>
