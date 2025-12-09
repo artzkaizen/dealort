@@ -1,11 +1,17 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import Autoplay from "embla-carousel-autoplay";
 import { FingerprintPatternIcon } from "lucide-react";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { GithubIcon, GoogleIcon } from "@/assets/icons";
 import InvestmentSVG from "@/assets/illustrations/auth-investment.svg";
 import PitchingSVG from "@/assets/illustrations/auth-pitching.svg";
 import UnlockSVG from "@/assets/illustrations/auth-unlock.svg";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
@@ -20,7 +26,8 @@ export const Route = createFileRoute("/auth/login")({
 
 function RouteComponent() {
   const navigate = useNavigate({ from: "/auth/login" });
-
+  const { refetch } = authClient.useSession();
+  const router = useRouter();
   useEffect(() => {
     authClient.getSession().then((session) => {
       if (session.data?.user) {
@@ -44,6 +51,19 @@ function RouteComponent() {
       provider: "github",
       callbackURL: `${window.location.origin}/dashboard`,
       newUserCallbackURL: `${window.location.origin}/dashboard/settings`,
+    });
+  }
+
+  async function requestPasskeyAuth() {
+    return await authClient.signIn.passkey(undefined, {
+      onError: (error) => {
+        toast.error(error.error.message || "Failed to request passkey auth");
+      },
+      onSuccess: () => {
+        toast.success("Passkey auth requested successfully");
+        router.invalidate();
+        refetch();
+      },
     });
   }
 
@@ -82,9 +102,13 @@ function RouteComponent() {
             <span className="grow border" />
           </div>
 
-          <Button className="cursor-pointer py-6 text-sm" variant={"secondary"}>
+          <ActionButton
+            action={() => requestPasskeyAuth()}
+            className="cursor-pointer py-6 text-sm"
+            variant={"secondary"}
+          >
             <FingerprintPatternIcon className="size-6" /> Use Passkey
-          </Button>
+          </ActionButton>
         </div>
       </div>
       <div className="col-span-2 min-h-screen max-md:hidden">

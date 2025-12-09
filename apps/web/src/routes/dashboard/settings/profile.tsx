@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
@@ -105,9 +106,9 @@ function RouteComponent() {
   };
 
   return (
-    <div className="px-2 py-2">
+    <div className="py-2">
       {/* Profile picture section */}
-      <section className="mb-12">
+      <section className="mb-12 px-2">
         <div className="flex items-center gap-3">
           <div className="flex flex-col gap-1">
             <div className="relative">
@@ -218,8 +219,10 @@ function RouteComponent() {
         </div>
       </section>
 
+      <Separator className="my-2" />
+
       {/* Profile details section */}
-      <section>
+      <section className="px-2">
         <Form {...detailsForm}>
           <form
             className="space-y-8"

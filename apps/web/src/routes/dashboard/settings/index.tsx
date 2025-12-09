@@ -26,8 +26,8 @@ function RouteComponent() {
   const userAgent = UAParser(currentSession?.userAgent || "");
 
   return (
-    <div className="px-2 py-2">
-      <section className="flex flex-col gap-2">
+    <div className="py-2">
+      <section className="flex flex-col gap-2 px-2">
         <h1 className="font-bold text-2xl">Overview</h1>
         <p className="text-muted-foreground text-sm">
           Manage your personal information and other preference, view what you
@@ -36,7 +36,7 @@ function RouteComponent() {
       </section>
 
       <section className="mt-5 flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-2">
           <div className="flex flex-wrap items-center gap-2">
             <Avatar className="size-26">
               <AvatarImage src={user?.image || ""} />
@@ -66,7 +66,7 @@ function RouteComponent() {
 
         <Separator className="my-2" />
 
-        <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-5 px-2 lg:grid-cols-3">
           <div className="flex flex-col gap-px">
             <h3 className="font-medium text-xs sm:text-sm">
               Number of Connected Accounts
