@@ -5,6 +5,7 @@ import { ResetPasswordEmail } from "./reset-password";
 import { SecurityWarningEmail } from "./security-warning";
 import { VerificationEmail } from "./verification";
 import { WelcomeEmail } from "./welcome";
+import { InvitationEmail } from "./invitation";
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -125,10 +126,14 @@ export async function sendResetPasswordEmail({
 export async function sendInvitationEmail({
   to,
   invitationUrl,
+  invitedBy,
+  invitationExpiresAt,
   organizationName,
 }: {
   to: string;
   invitationUrl: string;
+  invitedBy: string;
+  invitationExpiresAt: string;
   organizationName: string;
 }) {
   console.log(`[Email Service] Sending invitation email to: ${to}`);
@@ -137,7 +142,7 @@ export async function sendInvitationEmail({
     throw new Error("RESEND_API_KEY is not set");
   }
 
-  const email = InvitationEmail({ invitationUrl, organizationName });
+  const email = InvitationEmail({ invitationUrl, organizationName, invitedBy, invitationExpiresAt });
   const result = await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,

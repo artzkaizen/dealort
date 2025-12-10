@@ -6,13 +6,13 @@ import { type BetterAuthOptions, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { organization, twoFactor, username } from "better-auth/plugins";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
 import {
   sendDeleteAccountVerificationEmail,
   sendInvitationEmail,
   sendResetPasswordEmail,
   sendWelcomeEmail,
 } from "./emails/service";
+import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 const validUsernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const numbersOnlyRegex = /^\d+$/;
@@ -152,17 +152,16 @@ const authConfig: BetterAuthOptions = {
     organization({
       allowUserToCreateOrganization: true,
       memberLimit: 15,
-      sendInvitation: async ({
-        invitation,
-        url,
-      }: {
-        invitation: { email: string; organization: { name: string } };
-        url: string;
-      }) => {
+      async sendInvitationEmail(data) {
+        const inviteLink = `${env.BETTER_AUTH_URL}/accept-invitation/${data.id}`;
         await sendInvitationEmail({
-          to: invitation.email,
-          invitationUrl: url,
-          organizationName: invitation.organization.name,
+          to: data.email,
+          invitationUrl: inviteLink,
+          invitedBy: data.inviter.user.name,
+          invitationExpiresAt: new Date(
+            data.invitation.expiresAt
+          ).toISOString(),
+          organizationName: data.organization.name,
         });
       },
       schema: {
