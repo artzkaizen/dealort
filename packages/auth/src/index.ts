@@ -5,7 +5,7 @@ import { env } from "@dealort/utils/env";
 import { type BetterAuthOptions, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
-import { twoFactor, username } from "better-auth/plugins";
+import { organization, twoFactor, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import {
   sendDeleteAccountVerificationEmail,
@@ -130,6 +130,7 @@ const authConfig: BetterAuthOptions = {
   },
   plugins: [
     passkey(),
+    twoFactor(),
     username({
       usernameValidator: (username: string) => {
         if (username.length < 3) return false;
@@ -147,9 +148,110 @@ const authConfig: BetterAuthOptions = {
           .replace(/^-+|-+$/g, "");
       },
     }),
-    twoFactor(),
+    organization({
+      allowUserToCreateOrganization: true,
+      schema: {
+        organization: {
+          additionalFields: {
+            slug: {
+              type: "string",
+              unique: true,
+              required: true,
+              defaultValue() {
+                return "";
+              },
+            },
+            url: {
+              type: "string",
+              required: true,
+              defaultValue() {
+                return "";
+              },
+            },
+            isDev: {
+              type: "boolean",
+              required: true,
+              defaultValue() {
+                return false;
+              },
+            },
+            tagline: {
+              type: "string",
+              required: true,
+              defaultValue() {
+                return "";
+              },
+            },
+            description: {
+              type: "string",
+              required: false,
+              defaultValue() {
+                return "";
+              },
+            },
+            category: {
+              type: "string[]",
+              required: true,
+              defaultValue() {
+                return [];
+              },
+            },
+            xURL: {
+              type: "string",
+              required: true,
+              defaultValue() {
+                return "";
+              },
+            },
+            linkedinURL: {
+              type: "string",
+              required: false,
+              defaultValue() {
+                return "";
+              },
+            },
+            isOpenSource: {
+              type: "boolean",
+              required: true,
+              defaultValue() {
+                return false;
+              },
+            },
+            sourceCodeURL: {
+              type: "string",
+              required: false,
+              defaultValue() {
+                return "";
+              },
+            },
+            rating: {
+              type: "number",
+              required: true,
+              defaultValue() {
+                return 0;
+              },
+            },
+            impressions: {
+              type: "number",
+              required: true,
+              defaultValue() {
+                return 0;
+              },
+            },
+            gallery: {
+              type: "string[]",
+              required: false,
+              defaultValue() {
+                return [];
+              },
+            },
+          },
+        },
+      },
+    }),
     tanstackStartCookies(),
   ],
+
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path.startsWith("/sign-up")) {

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +21,12 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  CircularProgress,
+  CircularProgressIndicator,
+  CircularProgressRange,
+  CircularProgressTrack,
+} from "@/components/ui/circular-progress";
 import {
   Combobox,
   ComboboxAnchor,
@@ -65,6 +71,8 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Stepper,
@@ -85,6 +93,9 @@ import {
   TagsInputInput,
   TagsInputItem,
 } from "@/components/ui/tags-input";
+import { authClient } from "@/lib/auth-client";
+import { useUploadThing } from "@/lib/uploadthing";
+import { cn } from "@/lib/utils";
 
 const PROTOCOL_REGEX = /^https?:\/\//i;
 const DOMAIN_EXTENSION_REGEX = /\.[a-zA-Z]{2,}/;
@@ -278,7 +289,7 @@ const mediaForm = z.object({
     }),
   gallery: z
     .array(z.custom<File>())
-    .min(0)
+    .min(1, "Please select at least one file")
     .max(3, "Cannot select more than 3 files")
     .refine((files) => files.every((file) => file.size <= 2 * 1024 * 1024), {
       message: "File size must be less than 2MB",
@@ -304,13 +315,13 @@ type NewProductForm = z.infer<typeof productFormSchema>;
 
 const formSteps = [
   {
-    value: "get-started",
+    value: "get-started" as const,
     title: "Get Started",
     description: "",
     fields: ["getStarted.url", "getStarted.isDev"] as const,
   },
   {
-    value: "product-information",
+    value: "product-information" as const,
     title: "Product Information",
     description: "Details about your product",
     fields: [
@@ -325,13 +336,13 @@ const formSteps = [
     ] as const,
   },
   {
-    value: "media",
+    value: "media" as const,
     title: "Media contents",
     description: "Logos and screenshots",
     fields: ["media.logo", "media.gallery"] as const,
   },
   {
-    value: "confirmation",
+    value: "confirmation" as const,
     title: "Confirmation",
     description: "Preview and confirm inputs",
     fields: [] as const,
@@ -339,6 +350,7 @@ const formSteps = [
 ] as const;
 
 function RouteComponent() {
+  const router = useRouter();
   const form = useForm<NewProductForm>({
     defaultValues: {
       getStarted: {
@@ -363,12 +375,54 @@ function RouteComponent() {
     resolver: zodResolver(productFormSchema),
   });
 
-  const [step, setStep] = useState("get-started");
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
+
+  const [step, setStep] =
+    useState<(typeof formSteps)[number]["value"]>("get-started");
   const stepIndex = formSteps.findIndex(
     (currentStep) => currentStep.value === step
   );
-
   const [isOpenSourced, setIsOpenSourced] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [uploadProgressLogo, setUploadProgressLogo] = useState(0);
+  const [uploadProgressGallery, setUploadProgressGallery] = useState(0);
+
+  const logoUpload = useUploadThing("productLogo", {
+    onBeforeUploadBegin: (files) => {
+      setIsUploadingLogo(true);
+      return files;
+    },
+    onUploadError: (error) => {
+      console.error(error);
+      toast.error(error.message);
+      setIsUploadingLogo(false);
+    },
+    onUploadProgress: (progress) => {
+      setUploadProgressLogo(progress);
+    },
+    onClientUploadComplete: () => {
+      setIsUploadingLogo(false);
+    },
+  });
+  const galleryUpload = useUploadThing("productGallery", {
+    onBeforeUploadBegin: (files) => {
+      setIsUploadingGallery(true);
+      return files;
+    },
+    onUploadError: (error) => {
+      console.error(error);
+      toast.error(error.message);
+      setIsUploadingGallery(false);
+    },
+    onUploadProgress: (progress) => {
+      setUploadProgressGallery(progress);
+    },
+    onClientUploadComplete: () => {
+      setIsUploadingGallery(false);
+    },
+  });
 
   const onValidate: NonNullable<StepperProps["onValidate"]> = useCallback(
     async (_value, direction) => {
@@ -391,15 +445,66 @@ function RouteComponent() {
     [form, step]
   );
 
-  const onSubmit = (value: NewProductForm) => {
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground">
-          <code>{JSON.stringify(value, null, 2)}</code>
-        </pre>
-      ),
-    });
-  };
+  async function onSubmit(data: NewProductForm) {
+    if (data.media.logo.length === 0 && data.media?.gallery?.length === 0) {
+      toast.error("Please upload at least one logo or gallery image");
+      return;
+    }
+
+    const [logoResult, galleryResult] = await Promise.all([
+      logoUpload
+        .startUpload(data.media.logo)
+        .then((result) => result?.map((r) => r.ufsUrl)),
+      galleryUpload
+        .startUpload(data.media.gallery ?? [])
+        .then((result) => result?.map((r) => r.ufsUrl)),
+    ]);
+
+    const slug = data.productInformation.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-");
+
+    await authClient.organization.create(
+      {
+        name: data.productInformation.name,
+        slug,
+        logo:
+          Array.isArray(logoResult) && logoResult.length > 0
+            ? logoResult[0]
+            : "",
+        url: data.getStarted.url,
+        isDev: data.getStarted.isDev,
+        tagline: data.productInformation.tagline,
+        description: data.productInformation.description,
+        category: data.productInformation.category,
+        xURL: data.productInformation.xUrl,
+        linkedinURL: data.productInformation.linkedinUrl ?? "",
+        isOpenSource: data.productInformation.isOpenSource,
+        sourceCodeURL: data.productInformation.sourceCodeUrl ?? "",
+        rating: 0,
+        impressions: 0,
+        gallery: Array.isArray(galleryResult) ? galleryResult : [],
+      },
+      {
+        onSuccess: () => {
+          toast.success("Product created successfully");
+          router.navigate({
+            to: "/dashboard/products/$productId",
+            params: { productId: data.productInformation.slug },
+          });
+        },
+        onError: (error) => {
+          console.log(error);
+          toast.error(
+            error.error.message ||
+              error.error.statusText ||
+              "Failed to create product"
+          );
+        },
+      }
+    );
+  }
 
   return (
     <main className="grid min-h-screen gap-0 lg:grid-cols-2">
@@ -413,7 +518,9 @@ function RouteComponent() {
             >
               <Stepper
                 onValidate={onValidate}
-                onValueChange={setStep}
+                onValueChange={(value) =>
+                  setStep(value as (typeof formSteps)[number]["value"])
+                }
                 orientation="horizontal"
                 value={step}
               >
@@ -467,7 +574,7 @@ function RouteComponent() {
                                   onChange={(e) =>
                                     field.onChange(e.target.value)
                                   }
-                                  placeholder="dealort"
+                                  placeholder="dealort.com"
                                   value={field.value ?? ""}
                                 />
                               </InputGroup>
@@ -917,7 +1024,13 @@ function RouteComponent() {
                     className="flex w-full flex-col gap-2"
                     value="confirmation"
                   >
-                    <ProductPreview values={form.getValues()} />
+                    <ProductPreview
+                      isUploadingGallery={isUploadingGallery}
+                      isUploadingLogo={isUploadingLogo}
+                      uploadProgressGallery={uploadProgressGallery}
+                      uploadProgressLogo={uploadProgressLogo}
+                      values={form.getValues()}
+                    />
                   </StepperContent>
 
                   <div className="mt-4 flex justify-between">
@@ -930,7 +1043,14 @@ function RouteComponent() {
                       Step {stepIndex + 1} of {formSteps.length}
                     </div>
                     {stepIndex === formSteps.length - 1 ? (
-                      <Button type="submit">Complete</Button>
+                      <Button
+                        disabled={form.formState.isSubmitting}
+                        type="submit"
+                      >
+                        <LoadingSwap isLoading={form.formState.isSubmitting}>
+                          Complete
+                        </LoadingSwap>
+                      </Button>
                     ) : (
                       <StepperNext asChild>
                         <Button type="button">
@@ -948,7 +1068,13 @@ function RouteComponent() {
 
       {step !== "confirmation" && (
         <aside className="max-lg:hidden">
-          <ProductPreview values={form.getValues()} />
+          <ProductPreview
+            isUploadingGallery={isUploadingGallery}
+            isUploadingLogo={isUploadingLogo}
+            uploadProgressGallery={uploadProgressGallery}
+            uploadProgressLogo={uploadProgressLogo}
+            values={form.getValues()}
+          />
         </aside>
       )}
     </main>
@@ -1044,6 +1170,10 @@ export function CategoriesCombobox({
 
 interface PreviewProps {
   values: NewProductForm;
+  isUploadingLogo: boolean;
+  isUploadingGallery: boolean;
+  uploadProgressLogo: number;
+  uploadProgressGallery: number;
 }
 
 function getFirstFileUrl(files: File[] = []) {
@@ -1055,7 +1185,13 @@ function getFilesUrls(files: File[] = []) {
   return files.map((f) => URL.createObjectURL(f));
 }
 
-export function ProductPreview({ values }: PreviewProps) {
+export function ProductPreview({
+  values,
+  isUploadingLogo,
+  isUploadingGallery,
+  uploadProgressLogo,
+  uploadProgressGallery,
+}: PreviewProps) {
   const logoUrl = values.media.logo?.length
     ? getFirstFileUrl(values.media.logo)
     : null;
@@ -1068,15 +1204,28 @@ export function ProductPreview({ values }: PreviewProps) {
       {/* Logo, Name, Tagline */}
       <div className="flex items-center gap-1">
         <Avatar className="size-16 shrink-0">
-          {logoUrl ? (
-            <AvatarImage
-              alt={values.productInformation.name || "Logo"}
-              src={logoUrl}
-            />
+          {isUploadingLogo ? (
+            <Skeleton className="size-full">
+              <CircularProgress
+                className="size-full"
+                value={uploadProgressLogo}
+              >
+                <CircularProgressIndicator>
+                  <CircularProgressTrack />
+                  <CircularProgressRange />
+                </CircularProgressIndicator>
+              </CircularProgress>
+            </Skeleton>
           ) : (
-            <AvatarFallback>
-              <Skeleton className="h-16 w-16 rounded-full" />
-            </AvatarFallback>
+            <>
+              <AvatarImage
+                alt={values.productInformation.name || "Logo"}
+                src={logoUrl ?? ""}
+              />
+              <AvatarFallback>
+                <Skeleton className="h-16 w-16 rounded-full" />
+              </AvatarFallback>
+            </>
           )}
         </Avatar>
         <div className="ml-3 flex flex-col gap-2">
@@ -1244,29 +1393,39 @@ export function ProductPreview({ values }: PreviewProps) {
         <div className="mb-1 font-semibold text-muted-foreground text-xs">
           Gallery
         </div>
-        {galleryUrls.length > 0 ? (
-          <Carousel className="w-full max-w-md">
-            <CarouselContent>
-              {galleryUrls.map((url, idx) => (
-                <CarouselItem className="flex justify-center" key={url}>
-                  <img
-                    alt={`Gallery ${idx + 1}`}
-                    className="max-h-72 w-full rounded-lg border bg-muted object-contain"
-                    height=""
-                    src={url}
-                    width=""
-                  />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        ) : (
-          <div className="flex gap-2">
-            <Skeleton className="h-28 w-40 rounded-lg" />
-            <Skeleton className="h-28 w-40 rounded-lg" />
-            <Skeleton className="h-28 w-40 rounded-lg" />
-          </div>
-        )}
+        <div className="flex flex-col gap-px">
+          {galleryUrls.length > 0 ? (
+            <Carousel
+              className={cn("w-full max-w-md", {
+                "blur-sm": isUploadingGallery,
+              })}
+            >
+              <CarouselContent>
+                {galleryUrls.map((url, idx) => (
+                  <CarouselItem className="flex justify-center" key={url}>
+                    <img
+                      alt={`Gallery ${idx + 1}`}
+                      className="max-h-72 w-full rounded-lg border bg-muted object-contain"
+                      height=""
+                      src={url}
+                      width=""
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          ) : (
+            <div className="flex gap-2">
+              <Skeleton className="h-28 w-40 rounded-lg" />
+              <Skeleton className="h-28 w-40 rounded-lg" />
+              <Skeleton className="h-28 w-40 rounded-lg" />
+            </div>
+          )}
+
+          {isUploadingGallery && (
+            <Progress className="h-1" value={uploadProgressGallery} />
+          )}
+        </div>
       </div>
     </div>
   );

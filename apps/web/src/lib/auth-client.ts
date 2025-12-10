@@ -1,7 +1,9 @@
 import { passkeyClient } from "@better-auth/passkey/client";
-import type { AuthConfig } from "@dealort/auth";
+import type { AuthConfig, auth } from "@dealort/auth";
 import {
   inferAdditionalFields,
+  inferOrgAdditionalFields,
+  organizationClient,
   twoFactorClient,
   usernameClient,
 } from "better-auth/client/plugins";
@@ -14,5 +16,8 @@ export const authClient = createAuthClient({
     passkeyClient(),
     twoFactorClient(),
     usernameClient(),
+    organizationClient({
+      schema: inferOrgAdditionalFields<typeof auth>(),
+    }),
   ],
 });
