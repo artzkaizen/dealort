@@ -17,6 +17,7 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as PublicLaunchesRouteImport } from './routes/_public/launches'
 import { Route as DashboardSettingsLayoutRouteImport } from './routes/dashboard/settings/layout'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
+import { Route as DashboardProductsIndexRouteImport } from './routes/dashboard/products/index'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public/products/index'
 import { Route as DashboardSettingsSessionsRouteImport } from './routes/dashboard/settings/sessions'
 import { Route as DashboardSettingsSecurityRouteImport } from './routes/dashboard/settings/security'
@@ -25,6 +26,8 @@ import { Route as DashboardSettingsDangerRouteImport } from './routes/dashboard/
 import { Route as DashboardSettingsAppearanceRouteImport } from './routes/dashboard/settings/appearance'
 import { Route as DashboardSettingsAccountsRouteImport } from './routes/dashboard/settings/accounts'
 import { Route as DashboardProductsNewRouteImport } from './routes/dashboard/products/new'
+import { Route as DashboardProductsSlugIndexRouteImport } from './routes/dashboard/products/$slug/index'
+import { Route as DashboardProductsSlugEditRouteImport } from './routes/dashboard/products/$slug/edit'
 import { Route as DashboardTestTestATestBTestCTestRouteImport } from './routes/dashboard/test/test-a/test-b/test-c/test'
 
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
@@ -65,6 +68,11 @@ const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardSettingsLayoutRoute,
+} as any)
+const DashboardProductsIndexRoute = DashboardProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/products/',
+  getParentRoute: () => DashboardLayoutRoute,
 } as any)
 const PublicProductsIndexRoute = PublicProductsIndexRouteImport.update({
   id: '/products/',
@@ -111,6 +119,18 @@ const DashboardProductsNewRoute = DashboardProductsNewRouteImport.update({
   path: '/products/new',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardProductsSlugIndexRoute =
+  DashboardProductsSlugIndexRouteImport.update({
+    id: '/products/$slug/',
+    path: '/products/$slug/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
+const DashboardProductsSlugEditRoute =
+  DashboardProductsSlugEditRouteImport.update({
+    id: '/products/$slug/edit',
+    path: '/products/$slug/edit',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 const DashboardTestTestATestBTestCTestRoute =
   DashboardTestTestATestBTestCTestRouteImport.update({
     id: '/test/test-a/test-b/test-c/test',
@@ -133,7 +153,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings/security': typeof DashboardSettingsSecurityRoute
   '/dashboard/settings/sessions': typeof DashboardSettingsSessionsRoute
   '/products': typeof PublicProductsIndexRoute
+  '/dashboard/products': typeof DashboardProductsIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
+  '/dashboard/products/$slug': typeof DashboardProductsSlugIndexRoute
   '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
 export interface FileRoutesByTo {
@@ -149,7 +172,10 @@ export interface FileRoutesByTo {
   '/dashboard/settings/security': typeof DashboardSettingsSecurityRoute
   '/dashboard/settings/sessions': typeof DashboardSettingsSessionsRoute
   '/products': typeof PublicProductsIndexRoute
+  '/dashboard/products': typeof DashboardProductsIndexRoute
   '/dashboard/settings': typeof DashboardSettingsIndexRoute
+  '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
+  '/dashboard/products/$slug': typeof DashboardProductsSlugIndexRoute
   '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
 export interface FileRoutesById {
@@ -169,7 +195,10 @@ export interface FileRoutesById {
   '/dashboard/settings/security': typeof DashboardSettingsSecurityRoute
   '/dashboard/settings/sessions': typeof DashboardSettingsSessionsRoute
   '/_public/products/': typeof PublicProductsIndexRoute
+  '/dashboard/products/': typeof DashboardProductsIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
+  '/dashboard/products/$slug/': typeof DashboardProductsSlugIndexRoute
   '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
 export interface FileRouteTypes {
@@ -189,7 +218,10 @@ export interface FileRouteTypes {
     | '/dashboard/settings/security'
     | '/dashboard/settings/sessions'
     | '/products'
+    | '/dashboard/products'
     | '/dashboard/settings/'
+    | '/dashboard/products/$slug/edit'
+    | '/dashboard/products/$slug'
     | '/dashboard/test/test-a/test-b/test-c/test'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -205,7 +237,10 @@ export interface FileRouteTypes {
     | '/dashboard/settings/security'
     | '/dashboard/settings/sessions'
     | '/products'
+    | '/dashboard/products'
     | '/dashboard/settings'
+    | '/dashboard/products/$slug/edit'
+    | '/dashboard/products/$slug'
     | '/dashboard/test/test-a/test-b/test-c/test'
   id:
     | '__root__'
@@ -224,7 +259,10 @@ export interface FileRouteTypes {
     | '/dashboard/settings/security'
     | '/dashboard/settings/sessions'
     | '/_public/products/'
+    | '/dashboard/products/'
     | '/dashboard/settings/'
+    | '/dashboard/products/$slug/edit'
+    | '/dashboard/products/$slug/'
     | '/dashboard/test/test-a/test-b/test-c/test'
   fileRoutesById: FileRoutesById
 }
@@ -292,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsIndexRouteImport
       parentRoute: typeof DashboardSettingsLayoutRoute
     }
+    '/dashboard/products/': {
+      id: '/dashboard/products/'
+      path: '/products'
+      fullPath: '/dashboard/products'
+      preLoaderRoute: typeof DashboardProductsIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/_public/products/': {
       id: '/_public/products/'
       path: '/products'
@@ -346,6 +391,20 @@ declare module '@tanstack/react-router' {
       path: '/products/new'
       fullPath: '/dashboard/products/new'
       preLoaderRoute: typeof DashboardProductsNewRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/products/$slug/': {
+      id: '/dashboard/products/$slug/'
+      path: '/products/$slug'
+      fullPath: '/dashboard/products/$slug'
+      preLoaderRoute: typeof DashboardProductsSlugIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/products/$slug/edit': {
+      id: '/dashboard/products/$slug/edit'
+      path: '/products/$slug/edit'
+      fullPath: '/dashboard/products/$slug/edit'
+      preLoaderRoute: typeof DashboardProductsSlugEditRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
     '/dashboard/test/test-a/test-b/test-c/test': {
@@ -404,6 +463,9 @@ interface DashboardLayoutRouteChildren {
   DashboardSettingsLayoutRoute: typeof DashboardSettingsLayoutRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardProductsNewRoute: typeof DashboardProductsNewRoute
+  DashboardProductsIndexRoute: typeof DashboardProductsIndexRoute
+  DashboardProductsSlugEditRoute: typeof DashboardProductsSlugEditRoute
+  DashboardProductsSlugIndexRoute: typeof DashboardProductsSlugIndexRoute
   DashboardTestTestATestBTestCTestRoute: typeof DashboardTestTestATestBTestCTestRoute
 }
 
@@ -411,6 +473,9 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardSettingsLayoutRoute: DashboardSettingsLayoutRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardProductsNewRoute: DashboardProductsNewRoute,
+  DashboardProductsIndexRoute: DashboardProductsIndexRoute,
+  DashboardProductsSlugEditRoute: DashboardProductsSlugEditRoute,
+  DashboardProductsSlugIndexRoute: DashboardProductsSlugIndexRoute,
   DashboardTestTestATestBTestCTestRoute: DashboardTestTestATestBTestCTestRoute,
 }
 

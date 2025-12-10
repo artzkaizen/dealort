@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -17,7 +17,7 @@ export const user = sqliteTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).default(
-    false,
+    false
   ),
   username: text("username").unique(),
   displayUsername: text("display_username"),
@@ -44,7 +44,7 @@ export const session = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     activeOrganizationId: text("active_organization_id"),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [index("session_userId_idx").on(table.userId)]
 );
 
 export const account = sqliteTable(
@@ -74,7 +74,7 @@ export const account = sqliteTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("account_userId_idx").on(table.userId)],
+  (table) => [index("account_userId_idx").on(table.userId)]
 );
 
 export const verification = sqliteTable(
@@ -92,7 +92,7 @@ export const verification = sqliteTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("verification_identifier_idx").on(table.identifier)],
+  (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
 
 export const passkey = sqliteTable(
@@ -115,7 +115,7 @@ export const passkey = sqliteTable(
   (table) => [
     index("passkey_userId_idx").on(table.userId),
     index("passkey_credentialID_idx").on(table.credentialID),
-  ],
+  ]
 );
 
 export const twoFactor = sqliteTable(
@@ -131,7 +131,7 @@ export const twoFactor = sqliteTable(
   (table) => [
     index("twoFactor_secret_idx").on(table.secret),
     index("twoFactor_userId_idx").on(table.userId),
-  ],
+  ]
 );
 
 export const organization = sqliteTable("organization", {
@@ -153,6 +153,7 @@ export const organization = sqliteTable("organization", {
   rating: integer("rating").notNull(),
   impressions: integer("impressions").notNull(),
   gallery: text("gallery", { mode: "json" }),
+  releaseDate: integer("release_date", { mode: "timestamp_ms" }),
 });
 
 export const member = sqliteTable(
@@ -171,7 +172,7 @@ export const member = sqliteTable(
   (table) => [
     index("member_organizationId_idx").on(table.organizationId),
     index("member_userId_idx").on(table.userId),
-  ],
+  ]
 );
 
 export const invitation = sqliteTable(
@@ -195,7 +196,7 @@ export const invitation = sqliteTable(
   (table) => [
     index("invitation_organizationId_idx").on(table.organizationId),
     index("invitation_email_idx").on(table.email),
-  ],
+  ]
 );
 
 export const rateLimit = sqliteTable("rate_limit", {

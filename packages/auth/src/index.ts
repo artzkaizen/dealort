@@ -245,6 +245,13 @@ const authConfig: BetterAuthOptions = {
                 return [];
               },
             },
+            releaseDate: {
+              type: "date",
+              required: false,
+              defaultValue() {
+                return null;
+              },
+            },
           },
         },
       },

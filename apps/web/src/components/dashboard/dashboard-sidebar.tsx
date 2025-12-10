@@ -2,9 +2,9 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3Icon,
   ChevronsUpDownIcon,
-  FileText,
   LayoutDashboard,
   LogOut,
+  PackageIcon,
   Settings,
   User,
   Users,
@@ -46,14 +46,14 @@ const dashboardLinks = [
     icon: BarChart3Icon,
   },
   {
+    path: "/dashboard/products",
+    label: "Products",
+    icon: PackageIcon,
+  },
+  {
     path: "/dashboard/users",
     label: "Users",
     icon: Users,
-  },
-  {
-    path: "/dashboard/documents",
-    label: "Documents",
-    icon: FileText,
   },
   // {
   //   path: "/dashboard/settings",
