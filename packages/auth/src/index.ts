@@ -6,13 +6,13 @@ import { type BetterAuthOptions, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { organization, twoFactor, username } from "better-auth/plugins";
+import { tanstackStartCookies } from "better-auth/tanstack-start";
 import {
   sendDeleteAccountVerificationEmail,
   sendInvitationEmail,
   sendResetPasswordEmail,
   sendWelcomeEmail,
 } from "./emails/service";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 const validUsernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const numbersOnlyRegex = /^\d+$/;
@@ -154,7 +154,7 @@ const authConfig: BetterAuthOptions = {
       memberLimit: 15,
       async sendInvitationEmail(data) {
         const inviteLink = `${env.BETTER_AUTH_URL}/accept-invitation/${data.id}`;
-        await sendInvitationEmail({
+        const res = await sendInvitationEmail({
           to: data.email,
           invitationUrl: inviteLink,
           invitedBy: data.inviter.user.name,
@@ -163,6 +163,9 @@ const authConfig: BetterAuthOptions = {
           ).toISOString(),
           organizationName: data.organization.name,
         });
+
+        console.log("sendInvitationEmail", res.data?.id, res.error);
+        // return res;
       },
       schema: {
         organization: {
@@ -170,13 +173,6 @@ const authConfig: BetterAuthOptions = {
             slug: {
               type: "string",
               unique: true,
-              required: true,
-              defaultValue() {
-                return "";
-              },
-            },
-            url: {
-              type: "string",
               required: true,
               defaultValue() {
                 return "";
@@ -210,32 +206,11 @@ const authConfig: BetterAuthOptions = {
                 return [];
               },
             },
-            xURL: {
-              type: "string",
-              required: true,
-              defaultValue() {
-                return "";
-              },
-            },
-            linkedinURL: {
-              type: "string",
-              required: false,
-              defaultValue() {
-                return "";
-              },
-            },
             isOpenSource: {
               type: "boolean",
               required: true,
               defaultValue() {
                 return false;
-              },
-            },
-            sourceCodeURL: {
-              type: "string",
-              required: false,
-              defaultValue() {
-                return "";
               },
             },
             rating: {
@@ -250,13 +225,6 @@ const authConfig: BetterAuthOptions = {
               required: true,
               defaultValue() {
                 return 0;
-              },
-            },
-            gallery: {
-              type: "string[]",
-              required: false,
-              defaultValue() {
-                return [];
               },
             },
             releaseDate: {

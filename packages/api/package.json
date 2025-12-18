@@ -27,6 +27,7 @@
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "drizzle-orm": "^0.44.2",
     "dotenv": "catalog:",
     "hono": "catalog:",
     "uploadthing": "^7.7.4",

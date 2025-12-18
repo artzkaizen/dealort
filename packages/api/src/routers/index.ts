@@ -2,6 +2,10 @@ import { db } from "@dealort/db";
 import type { RouterClient } from "@orpc/server";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../index";
+import { commentsRouter } from "./comments";
+import { productsRouter } from "./products";
+import { reportsRouter } from "./reports";
+import { reviewsRouter } from "./reviews";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => "OK"),
@@ -24,6 +28,14 @@ export const appRouter = {
 
       return { success: true };
     }),
+  // Product routes
+  products: productsRouter,
+  // Review routes
+  reviews: reviewsRouter,
+  // Comment routes
+  comments: commentsRouter,
+  // Report routes
+  reports: reportsRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

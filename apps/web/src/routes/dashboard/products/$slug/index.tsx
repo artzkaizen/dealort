@@ -2,9 +2,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   Edit,
+  EllipsisIcon,
   ExternalLinkIcon,
   FileText,
   Mail,
+  MailPlusIcon,
   PlusIcon,
   Trash2,
   Users,
@@ -42,6 +44,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -67,14 +74,18 @@ export const Route = createFileRoute("/dashboard/products/$slug/")({
         organizationSlug: params.slug,
       },
     });
+    // Get full product data with references and assets
+    const productData = await orpc.products.getBySlug.query({
+      input: { slug: params.slug },
+    });
     const { data: session } = await authClient.getSession();
-    return { organization, session };
+    return { organization, productData, session };
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { organization, session } = Route.useLoaderData();
+  const { organization, productData, session } = Route.useLoaderData();
   const router = useRouter();
   const { data: currentSession } = authClient.useSession();
 
@@ -90,9 +101,52 @@ function RouteComponent() {
     (member) => member.userId === userId && member.role === "owner"
   );
 
-  const gallery = (org.gallery as string[]) || [];
+  // Use productData for URLs and assets (from normalized tables)
+  const gallery = (productData?.gallery as string[]) || [];
+  const logo = productData?.logo ?? org.logo ?? "";
+  const url = productData?.url ?? "";
+  const xURL = productData?.xURL ?? "";
+  const linkedinURL = productData?.linkedinURL ?? "";
+  const sourceCodeURL = productData?.sourceCodeURL ?? "";
   const memberCount = org.members?.length ?? 0;
   const remainingSlots = MEMBER_LIMIT - memberCount;
+
+  async function handleResendInvitation(invitationId: string, email: string) {
+    return await authClient.organization.inviteMember(
+      {
+        email,
+        role: "member",
+        resend: true,
+        organizationId: org.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Invitation resent successfully");
+          router.invalidate();
+        },
+        onError: (error) => {
+          toast.error(error.error.message || "Failed to resend invitation");
+        },
+      }
+    );
+  }
+
+  async function handleRevokeInvitation(invitationId: string) {
+    return await authClient.organization.cancelInvitation(
+      {
+        invitationId,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Invitation was revoked");
+          router.invalidate();
+        },
+        onError: (error) => {
+          toast.error(error.error.message || "Failed to revoke");
+        },
+      }
+    );
+  }
 
   async function handleDeleteOrganization() {
     const result = await authClient.organization.delete({
@@ -127,15 +181,15 @@ function RouteComponent() {
           <div className="flex flex-col gap-6 rounded-lg border bg-card p-6 shadow-sm">
             <div className="flex items-start gap-4">
               <Avatar className="size-20 shrink-0">
-                <AvatarImage alt={org.name} src={org.logo ?? ""} />
+                <AvatarImage alt={org.name} src={logo} />
                 <AvatarFallback className="text-lg">
                   {org.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-1 flex-col gap-2">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex flex-col gap-1">
-                    <h1 className="font-semibold text-2xl leading-tight">
+                    <h1 className="font-semibold text-2xl capitalize leading-tight">
                       {org.name}
                     </h1>
                     <p className="text-muted-foreground text-sm leading-relaxed">
@@ -182,10 +236,10 @@ function RouteComponent() {
             {/* Gallery Carousel */}
             {gallery.length > 0 && (
               <div className="mt-6">
-                <Carousel className="w-full">
+                <Carousel className="relative w-full">
                   <CarouselContent>
                     {gallery.map((imageUrl, index) => (
-                      <CarouselItem key={index}>
+                      <CarouselItem key={imageUrl}>
                         <div className="flex items-center justify-center rounded-lg border bg-muted p-2">
                           <img
                             alt={`Gallery ${index + 1}`}
@@ -200,8 +254,8 @@ function RouteComponent() {
                   </CarouselContent>
                   {gallery.length > 1 && (
                     <>
-                      <CarouselPrevious />
-                      <CarouselNext />
+                      <CarouselPrevious className="-translate-y-1/2 absolute top-1/2 left-0" />
+                      <CarouselNext className="-translate-y-1/2 absolute top-1/2 right-0" />
                     </>
                   )}
                 </Carousel>
@@ -217,14 +271,14 @@ function RouteComponent() {
                 <span className="font-medium text-muted-foreground text-sm">
                   Product URL
                 </span>
-                {org.url ? (
+                {url ? (
                   <a
                     className="flex items-center gap-1 text-primary hover:underline"
-                    href={org.url}
+                    href={url}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {org.url}
+                    {url}
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -236,14 +290,14 @@ function RouteComponent() {
                 <span className="font-medium text-muted-foreground text-sm">
                   X (Twitter) URL
                 </span>
-                {org.xURL ? (
+                {xURL ? (
                   <a
                     className="flex items-center gap-1 text-primary hover:underline"
-                    href={org.xURL}
+                    href={xURL}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {org.xURL}
+                    {xURL}
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -255,14 +309,14 @@ function RouteComponent() {
                 <span className="font-medium text-muted-foreground text-sm">
                   LinkedIn URL
                 </span>
-                {org.linkedinURL ? (
+                {linkedinURL ? (
                   <a
                     className="flex items-center gap-1 text-primary hover:underline"
-                    href={org.linkedinURL}
+                    href={linkedinURL}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {org.linkedinURL}
+                    {linkedinURL}
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -274,14 +328,14 @@ function RouteComponent() {
                 <span className="font-medium text-muted-foreground text-sm">
                   Source Code URL
                 </span>
-                {org.sourceCodeURL ? (
+                {sourceCodeURL ? (
                   <a
                     className="flex items-center gap-1 text-primary hover:underline"
-                    href={org.sourceCodeURL}
+                    href={sourceCodeURL}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {org.sourceCodeURL}
+                    {sourceCodeURL}
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -385,8 +439,8 @@ function RouteComponent() {
 
         <TabsContent className="space-y-4" value="invitations">
           <div className="rounded-lg border bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-semibold text-xl">Invitations</h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between">
+              <h2 className="font-semibold text-lg md:text-xl">Invitations</h2>
               <div className="flex items-center gap-4">
                 <p className="text-muted-foreground text-sm">
                   <SlotCountBadge remainingSlots={remainingSlots} />
@@ -400,31 +454,63 @@ function RouteComponent() {
               <div className="space-y-2">
                 {org.invitations.map((invitation) => (
                   <div
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
                     key={invitation.id}
                   >
                     <div>
-                      <p className="font-medium">{invitation.email}</p>
-                      <p className="text-muted-foreground text-sm">
-                        Invited by {invitation.user?.name}
+                      <p className="font-medium text-sm sm:text-base">
+                        {invitation.email}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground sm:text-xs">
+                        Expires on {formatDate(new Date(invitation.expiresAt))}
                       </p>
                     </div>
-                    <span
-                      className={cn(
-                        "rounded px-2 py-1 font-medium text-xs capitalize",
-                        (() => {
-                          if (invitation.status === "pending") {
-                            return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+
+                    <div className="flex gap-1 max-sm:justify-between">
+                      <span
+                        className={cn(
+                          "rounded px-2 py-1 font-medium text-xs capitalize",
+                          (() => {
+                            if (invitation.status === "pending") {
+                              return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+                            }
+                            if (invitation.status === "accepted") {
+                              return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+                            }
+                            return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+                          })()
+                        )}
+                      >
+                        {invitation.status}
+                      </span>
+                    </div>
+
+                    <Popover>
+                      <PopoverTrigger>
+                        <EllipsisIcon />
+                      </PopoverTrigger>
+                      <PopoverContent className="flex size-fit flex-col overflow-hidden p-0">
+                        <BetterAuthActionButton
+                          action={() =>
+                            handleResendInvitation(
+                              invitation.id,
+                              invitation.email
+                            )
                           }
-                          if (invitation.status === "accepted") {
-                            return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-                          }
-                          return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-                        })()
-                      )}
-                    >
-                      {invitation.status}
-                    </span>
+                          className="text-xs"
+                          variant="secondary"
+                        >
+                          <MailPlusIcon /> Resend Invitation
+                        </BetterAuthActionButton>
+                        <BetterAuthActionButton
+                          action={() => handleRevokeInvitation(invitation.id)}
+                          className="text-xs"
+                          variant="destructive"
+                        >
+                          <Trash2 /> Revoke Invitation
+                        </BetterAuthActionButton>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 ))}
               </div>
@@ -475,9 +561,9 @@ function InviteMemberDialog({ organizationId }: { organizationId: string }) {
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <PlusIcon className="mr-2 size-4" />
-          Invite Member
+        <Button className="text-xs" size="sm">
+          <PlusIcon className="size-4" />
+          <span className="hidden md:inline">Invite Member</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

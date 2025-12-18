@@ -5,6 +5,7 @@ import {
   ArrowRight,
   CalendarIcon,
   CloudUploadIcon,
+  ExternalLinkIcon,
   XIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import z from "zod";
 import { TextField } from "@/components/custom-form-components/text-field";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -27,6 +29,14 @@ import {
   CircularProgressRange,
   CircularProgressTrack,
 } from "@/components/ui/circular-progress";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import {
   Field,
   FieldDescription,
@@ -66,6 +76,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Stepper,
@@ -81,10 +99,12 @@ import {
   StepperTitle,
   StepperTrigger,
 } from "@/components/ui/stepper";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { authClient } from "@/lib/auth-client";
 import { useUploadThing } from "@/lib/uploadthing";
 import { cn, slugify } from "@/lib/utils";
 import { CategoriesCombobox } from "@/routes/dashboard/products/new";
+import { Image } from "../ui/image";
 
 const PROTOCOL_REGEX = /^https?:\/\//i;
 const DOMAIN_EXTENSION_REGEX = /\.[a-zA-Z]{2,}/;
@@ -98,18 +118,29 @@ const getImageDimensions = (
   file: File | Blob
 ): Promise<{ width: number; height: number }> =>
   new Promise((resolve, reject) => {
-    const img = new Image();
+    const img = new window.Image();
     const url = URL.createObjectURL(file);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    // Set a timeout to prevent hanging indefinitely
+    timeoutId = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image load timeout"));
+    }, 10_000); // 10 second timeout
 
     img.onload = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      const width = img.naturalWidth || img.width;
+      const height = img.naturalHeight || img.height;
       URL.revokeObjectURL(url);
       resolve({
-        width: img.width,
-        height: img.height,
+        width,
+        height,
       });
     };
 
     img.onerror = () => {
+      if (timeoutId) clearTimeout(timeoutId);
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load image for dimension check."));
     };
@@ -256,7 +287,7 @@ const mediaFormBase = z.object({
           });
           return;
         }
-      } catch (error) {
+      } catch (_error) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Could not determine image dimensions.",
@@ -464,7 +495,7 @@ function createSchemas(mode: "new" | "edit") {
       description: z
         .string()
         .min(1, "Type description")
-        .max(600, "Description cannot exceed 600 characters"),
+        .max(2500, "Description cannot exceed 600 characters"),
       category: z
         .array(z.string())
         .min(1, "Please select at least one category"),
@@ -585,7 +616,7 @@ const formSteps = [
   },
 ] as const;
 
-export type ProductFormData = {
+export interface ProductFormData {
   getStarted: {
     url: string;
     isDev: boolean;
@@ -607,14 +638,295 @@ export type ProductFormData = {
     logoUrls?: string[];
     galleryUrls?: string[];
   };
-};
+}
 
-export type ProductFormProps = {
+export interface ProductFormProps {
   mode: "new" | "edit";
   initialValues?: Partial<ProductFormData>;
   onSubmit: (data: ProductFormData) => Promise<void>;
   onCancel?: () => void;
-};
+}
+
+// ProductPreview component with all fields
+interface PreviewProps {
+  values: {
+    getStarted: {
+      url?: string;
+      isDev?: boolean;
+      releaseDate?: Date;
+    };
+    productInformation: {
+      name?: string;
+      tagline?: string;
+      description?: string;
+      category?: string[];
+      xUrl?: string;
+      linkedinUrl?: string;
+      isOpenSource?: boolean;
+      sourceCodeUrl?: string;
+    };
+    media: {
+      logo?: File[];
+      gallery?: File[];
+    };
+  };
+  isUploadingLogo: boolean;
+  isUploadingGallery: boolean;
+  uploadProgressLogo: number;
+  uploadProgressGallery: number;
+}
+
+function getFirstFileUrl(files: File[] = []) {
+  if (!files?.length) return "";
+  return URL.createObjectURL(files[0]);
+}
+
+function getFilesUrls(files: File[] = []) {
+  if (!files?.length) return [];
+  return files.map((f) => URL.createObjectURL(f));
+}
+
+function ProductPreview({
+  values,
+  isUploadingLogo,
+  isUploadingGallery,
+  uploadProgressLogo,
+  uploadProgressGallery,
+}: PreviewProps) {
+  const logoUrl = values.media?.logo?.length
+    ? getFirstFileUrl(values.media.logo)
+    : null;
+  const galleryUrls = values.media?.gallery?.length
+    ? getFilesUrls(values.media.gallery)
+    : [];
+
+  const getStarted = values.getStarted;
+  const productInfo = values.productInformation;
+
+  return (
+    <div className="flex flex-col gap-6 overflow-y-auto p-4">
+      {/* Logo and Basic Info */}
+      <div className="flex items-center gap-3 border-b pb-4">
+        <Avatar className="size-16 shrink-0">
+          {isUploadingLogo ? (
+            <Skeleton className="size-full">
+              <CircularProgress
+                className="size-full"
+                value={uploadProgressLogo}
+              >
+                <CircularProgressIndicator>
+                  <CircularProgressTrack />
+                  <CircularProgressRange />
+                </CircularProgressIndicator>
+              </CircularProgress>
+            </Skeleton>
+          ) : (
+            <>
+              <AvatarImage
+                alt={productInfo?.name || "Logo"}
+                src={logoUrl ?? ""}
+              />
+              <AvatarFallback>
+                {(productInfo?.name || "L").charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </>
+          )}
+        </Avatar>
+        <div className="flex flex-col gap-1">
+          <h3 className="font-semibold text-lg">
+            {productInfo?.name || (
+              <span className="text-muted-foreground">Product Name</span>
+            )}
+          </h3>
+          <p className="font-light text-muted-foreground text-sm">
+            {productInfo?.tagline || (
+              <span className="text-muted-foreground">Tagline</span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Description */}
+      {productInfo?.description && (
+        <div className="border-b pb-4">
+          <h4 className="mb-2 font-semibold text-sm">Description</h4>
+          <p className="whitespace-pre-wrap text-muted-foreground text-sm">
+            {productInfo.description}
+          </p>
+        </div>
+      )}
+
+      {/* Categories */}
+      {productInfo?.category && productInfo.category.length > 0 && (
+        <div className="border-b pb-4">
+          <h4 className="mb-2 font-semibold text-sm">Categories</h4>
+          <div className="flex flex-wrap gap-2">
+            {productInfo.category.map((cat) => (
+              <Badge key={cat} variant="secondary">
+                {cat}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* URL */}
+      {getStarted?.url && (
+        <div className="border-b pb-4">
+          <h4 className="mb-2 font-semibold text-sm">Website URL</h4>
+          <a
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+            href={getStarted.url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {getStarted.url}
+            <ExternalLinkIcon className="size-3" />
+          </a>
+        </div>
+      )}
+
+      {/* Social Links */}
+      {(productInfo?.xUrl ||
+        productInfo?.linkedinUrl ||
+        productInfo?.sourceCodeUrl) && (
+        <div className="border-b pb-4">
+          <h4 className="mb-2 font-semibold text-sm">Links</h4>
+          <div className="flex flex-col gap-2">
+            {productInfo.xUrl && (
+              <a
+                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+                href={productInfo.xUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                X (Twitter) <ExternalLinkIcon className="size-3" />
+              </a>
+            )}
+            {productInfo.linkedinUrl && (
+              <a
+                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+                href={productInfo.linkedinUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                LinkedIn <ExternalLinkIcon className="size-3" />
+              </a>
+            )}
+            {productInfo.sourceCodeUrl && (
+              <a
+                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+                href={productInfo.sourceCodeUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Source Code <ExternalLinkIcon className="size-3" />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Product Details */}
+      <div className="border-b pb-4">
+        <h4 className="mb-2 font-semibold text-sm">Product Details</h4>
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Status:</span>
+            <Badge variant={getStarted?.isDev ? "default" : "secondary"}>
+              {getStarted?.isDev ? "In Development" : "Production Ready"}
+            </Badge>
+          </div>
+          {getStarted?.releaseDate && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Release Date:</span>
+              <span>{format(getStarted.releaseDate, "PPP")}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Open Source:</span>
+            <Badge variant={productInfo?.isOpenSource ? "default" : "outline"}>
+              {productInfo?.isOpenSource ? "Yes" : "No"}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Gallery */}
+      {galleryUrls.length > 0 && (
+        <div className="border-b pb-4">
+          <h4 className="mb-2 font-semibold text-sm">Gallery</h4>
+          {isUploadingGallery && (
+            <div className="mb-2">
+              <Progress className="h-1" value={uploadProgressGallery} />
+            </div>
+          )}
+          <Carousel className="w-full">
+            <CarouselContent>
+              {galleryUrls.map((url, idx) => (
+                <CarouselItem className="flex justify-center" key={url}>
+                  <Image
+                    alt={`Gallery ${idx + 1}`}
+                    className="max-h-72 w-full rounded-lg border bg-muted object-contain"
+                    src={url}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Responsive Preview Component (Sheet on large, Drawer on small)
+interface ResponsivePreviewProps extends PreviewProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+function ResponsivePreview({
+  open,
+  onOpenChange,
+  children,
+  ...previewProps
+}: ResponsivePreviewProps) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Drawer onOpenChange={onOpenChange} open={open}>
+        <DrawerTrigger asChild>{children}</DrawerTrigger>
+        <DrawerContent className="max-h-[96vh]">
+          <DrawerHeader>
+            <DrawerTitle>Product Preview</DrawerTitle>
+            <DrawerDescription>
+              Review all your product information
+            </DrawerDescription>
+          </DrawerHeader>
+          <ProductPreview {...previewProps} />
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Sheet onOpenChange={onOpenChange} open={open}>
+      <SheetTrigger asChild>{children}</SheetTrigger>
+      <SheetContent className="w-full max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Product Preview</SheetTitle>
+          <SheetDescription>
+            Review all your product information
+          </SheetDescription>
+        </SheetHeader>
+        <ProductPreview {...previewProps} />
+      </SheetContent>
+    </Sheet>
+  );
+}
 
 export function ProductForm({
   mode,
@@ -716,6 +1028,7 @@ export function ProductForm({
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [uploadProgressLogo, setUploadProgressLogo] = useState(0);
   const [uploadProgressGallery, setUploadProgressGallery] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const logoUpload = useUploadThing("productLogo", {
     onBeforeUploadBegin: (files) => {
@@ -857,7 +1170,7 @@ export function ProductForm({
             ))}
           </StepperList>
 
-          <div className="flex flex-col space-y-8">
+          <div className="flex max-w-xl flex-col space-y-8">
             <StepperContent className="flex flex-col gap-2" value="get-started">
               <h1 className="text-3xl sm:text-4xl">
                 {mode === "edit" ? "Update product" : "Submit a product"}
@@ -881,7 +1194,7 @@ export function ProductForm({
                             <InputGroupText>https://</InputGroupText>
                           </InputGroupAddon>
                           <InputGroupInput
-                            className="pl-0.5!"
+                            className="pl-0.5! lowercase"
                             id={field.name}
                             inputMode="url"
                             onBlur={field.onBlur}
@@ -900,8 +1213,8 @@ export function ProductForm({
                   control={form.control}
                   name="getStarted.isDev"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                    <FormItem className="rounded-2xl border px-3 py-6 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                      <div className="flex items-center gap-1">
                         <FormControl>
                           <Checkbox
                             checked={field.value}
@@ -913,16 +1226,20 @@ export function ProductForm({
                             }
                           />
                         </FormControl>
-                        <div className="flex flex-col gap-1">
+
+                        <FormLabel htmlFor={field.name}>
                           <p className="text-sm">
                             is this product still in development?
                           </p>
-                          <FieldDescription className="font-light text-xs">
-                            Check the box if your product is not a fully
-                            production ready software.
-                          </FieldDescription>
-                        </div>
-                      </FormLabel>
+                        </FormLabel>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <FieldDescription className="font-light text-xs">
+                          Check the box if your product is not a fully
+                          production ready software.
+                        </FieldDescription>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -955,10 +1272,7 @@ export function ProductForm({
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-auto p-0">
                           <Calendar
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1900-01-01")
-                            }
-                            initialFocus
+                            disabled={(date) => date < new Date("1900-01-01")}
                             mode="single"
                             onSelect={field.onChange}
                             selected={field.value}
@@ -1001,8 +1315,9 @@ export function ProductForm({
                       <FormItem>
                         <FormControl>
                           <TextField
+                            className="[&>input]:capitalize"
                             inputType="input"
-                            label="Name of Product"
+                            label="Product name"
                             maxLength={40}
                             name={field.name}
                             onBlur={field.onBlur}
@@ -1052,7 +1367,7 @@ export function ProductForm({
                             infoTooltip="Describe your project in detail, what it is all about and what makes you stand out from the crowd"
                             inputType="textarea"
                             label="Description"
-                            maxLength={600}
+                            maxLength={2500}
                             name={field.name}
                             onBlur={field.onBlur}
                             onChange={(
@@ -1076,12 +1391,15 @@ export function ProductForm({
                         defaultValue={[]}
                         name="productInformation.category"
                         render={({ field }) => (
-                          <CategoriesCombobox
-                            name={field.name}
-                            onBlur={field.onBlur}
-                            onChange={field.onChange}
-                            value={field.value || []}
-                          />
+                          <div>
+                            <CategoriesCombobox
+                              name={field.name}
+                              onBlur={field.onBlur}
+                              onChange={field.onChange}
+                              value={field.value || []}
+                            />
+                            <FormMessage />
+                          </div>
                         )}
                       />
                     )}
@@ -1111,7 +1429,7 @@ export function ProductForm({
                               <InputGroupText>x.com/</InputGroupText>
                             </InputGroupAddon>
                             <InputGroupInput
-                              className="pl-0.5!"
+                              className="pl-0.5! lowercase"
                               id={field.name}
                               inputMode="text"
                               name={field.name}
@@ -1146,7 +1464,7 @@ export function ProductForm({
                               </InputGroupText>
                             </InputGroupAddon>
                             <InputGroupInput
-                              className="pl-0.5!"
+                              className="pl-0.5! lowercase"
                               id={field.name}
                               inputMode="text"
                               name={field.name}
@@ -1167,8 +1485,8 @@ export function ProductForm({
                       control={form.control}
                       name="productInformation.isOpenSource"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="cursor-pointer rounded-lg border p-3 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                        <FormItem className="rounded-lg border p-3 font-normal has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                          <div className="flex gap-1">
                             <FormControl>
                               <Checkbox
                                 checked={field.value}
@@ -1181,15 +1499,15 @@ export function ProductForm({
                                 }}
                               />
                             </FormControl>
-                            <div className="flex flex-col gap-1">
+                            <FormLabel htmlFor={field.name}>
                               <p className="text-sm">
                                 Is this product open source?
                               </p>
-                              <FieldDescription className="font-light text-xs">
-                                Check the box if your product is open source.
-                              </FieldDescription>
-                            </div>
-                          </FormLabel>
+                            </FormLabel>
+                          </div>
+                          <FieldDescription className="font-light text-xs">
+                            Check the box if your product is open source.
+                          </FieldDescription>
                         </FormItem>
                       )}
                     />
@@ -1209,7 +1527,7 @@ export function ProductForm({
                                   <InputGroupText>https://</InputGroupText>
                                 </InputGroupAddon>
                                 <InputGroupInput
-                                  className="pl-0.5!"
+                                  className="pl-0.5! lowercase"
                                   id={field.name}
                                   inputMode="url"
                                   onBlur={field.onBlur}
@@ -1268,22 +1586,25 @@ export function ProductForm({
                               recommended 240x240
                             </div>
                           </FileUploadDropzone>
-                          {field.value?.map((file, index) => (
-                            <FileUploadItem key={index} value={file}>
-                              <FileUploadItemPreview />
-                              <FileUploadItemMetadata />
-                              <FileUploadItemDelete asChild>
-                                <Button
-                                  className="size-7"
-                                  size="icon"
-                                  variant="ghost"
-                                >
-                                  <XIcon />
-                                  <span className="sr-only">Delete</span>
-                                </Button>
-                              </FileUploadItemDelete>
-                            </FileUploadItem>
-                          ))}
+                          {field.value &&
+                            field.value.length > 0 &&
+                            field.value?.map((file, index) => (
+                              // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                              <FileUploadItem key={index} value={file}>
+                                <FileUploadItemPreview />
+                                <FileUploadItemMetadata />
+                                <FileUploadItemDelete asChild>
+                                  <Button
+                                    className="size-7"
+                                    size="icon"
+                                    variant="ghost"
+                                  >
+                                    <XIcon />
+                                    <span className="sr-only">Delete</span>
+                                  </Button>
+                                </FileUploadItemDelete>
+                              </FileUploadItem>
+                            ))}
                         </FileUpload>
                         {isUploadingLogo && (
                           <div className="mt-2 space-y-1">
@@ -1346,6 +1667,7 @@ export function ProductForm({
                             </FileUploadDropzone>
                             <FileUploadList>
                               {field.value?.map((file, index) => (
+                                // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
                                 <FileUploadItem key={index} value={file}>
                                   <FileUploadItemPreview />
                                   <FileUploadItemMetadata />
@@ -1391,147 +1713,65 @@ export function ProductForm({
               className="flex w-full flex-col gap-2"
               value="confirmation"
             >
-              <ProductPreview
+              <div className="flex flex-col gap-4">
+                <h1 className="text-xl sm:text-2xl">Confirmation</h1>
+                <p className="font-light text-xs sm:text-sm">
+                  Review all your product information before submitting.
+                </p>
+              </div>
+            </StepperContent>
+
+            <div>
+              <ResponsivePreview
                 isUploadingGallery={isUploadingGallery}
                 isUploadingLogo={isUploadingLogo}
+                onOpenChange={setPreviewOpen}
+                open={previewOpen}
                 uploadProgressGallery={uploadProgressGallery}
                 uploadProgressLogo={uploadProgressLogo}
                 values={form.getValues()}
-              />
-            </StepperContent>
-
-            <div className="mt-4 flex justify-between">
-              {onCancel ? (
-                <Button onClick={onCancel} type="button" variant="outline">
-                  Cancel
+              >
+                <Button
+                  className="w-full sm:w-auto"
+                  type="button"
+                  variant="outline"
+                >
+                  Open Preview
                 </Button>
-              ) : (
-                <StepperPrev asChild>
-                  <Button type="button" variant="outline">
-                    <ArrowLeft />
+              </ResponsivePreview>
+              <div className="mt-4 flex justify-between">
+                {onCancel ? (
+                  <Button onClick={onCancel} type="button" variant="outline">
+                    Cancel
                   </Button>
-                </StepperPrev>
-              )}
-              <div className="text-muted-foreground text-sm">
-                Step {stepIndex + 1} of {formSteps.length}
+                ) : (
+                  <StepperPrev asChild>
+                    <Button type="button" variant="outline">
+                      <ArrowLeft />
+                    </Button>
+                  </StepperPrev>
+                )}
+                <div className="text-muted-foreground text-sm">
+                  Step {stepIndex + 1} of {formSteps.length}
+                </div>
+                {stepIndex === formSteps.length - 1 ? (
+                  <Button disabled={form.formState.isSubmitting} type="submit">
+                    <LoadingSwap isLoading={form.formState.isSubmitting}>
+                      {mode === "edit" ? "Update" : "Complete"}
+                    </LoadingSwap>
+                  </Button>
+                ) : (
+                  <StepperNext asChild>
+                    <Button type="button">
+                      <ArrowRight />
+                    </Button>
+                  </StepperNext>
+                )}
               </div>
-              {stepIndex === formSteps.length - 1 ? (
-                <Button disabled={form.formState.isSubmitting} type="submit">
-                  <LoadingSwap isLoading={form.formState.isSubmitting}>
-                    {mode === "edit" ? "Update" : "Complete"}
-                  </LoadingSwap>
-                </Button>
-              ) : (
-                <StepperNext asChild>
-                  <Button type="button">
-                    <ArrowRight />
-                  </Button>
-                </StepperNext>
-              )}
             </div>
           </div>
         </Stepper>
       </form>
     </Form>
-  );
-}
-
-// ProductPreview component (simplified version)
-interface PreviewProps {
-  values: any;
-  isUploadingLogo: boolean;
-  isUploadingGallery: boolean;
-  uploadProgressLogo: number;
-  uploadProgressGallery: number;
-}
-
-function getFirstFileUrl(files: File[] = []) {
-  if (!files?.length) return "";
-  return URL.createObjectURL(files[0]);
-}
-
-function getFilesUrls(files: File[] = []) {
-  if (!files?.length) return [];
-  return files.map((f) => URL.createObjectURL(f));
-}
-
-function ProductPreview({
-  values,
-  isUploadingLogo,
-  isUploadingGallery,
-  uploadProgressLogo,
-  uploadProgressGallery,
-}: PreviewProps) {
-  const logoUrl = values.media?.logo?.length
-    ? getFirstFileUrl(values.media.logo)
-    : null;
-  const galleryUrls = values.media?.gallery?.length
-    ? getFilesUrls(values.media.gallery)
-    : [];
-
-  return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-lg border p-5">
-      <div className="flex items-center gap-1">
-        <Avatar className="size-16 shrink-0">
-          {isUploadingLogo ? (
-            <Skeleton className="size-full">
-              <CircularProgress
-                className="size-full"
-                value={uploadProgressLogo}
-              >
-                <CircularProgressIndicator>
-                  <CircularProgressTrack />
-                  <CircularProgressRange />
-                </CircularProgressIndicator>
-              </CircularProgress>
-            </Skeleton>
-          ) : (
-            <>
-              <AvatarImage
-                alt={values.productInformation?.name || "Logo"}
-                src={logoUrl ?? ""}
-              />
-              <AvatarFallback>
-                <Skeleton className="h-16 w-16 rounded-full" />
-              </AvatarFallback>
-            </>
-          )}
-        </Avatar>
-        <div className="ml-3 flex flex-col gap-2">
-          <h3 className="font-semibold text-lg">
-            {values.productInformation?.name ? (
-              values.productInformation.name
-            ) : (
-              <Skeleton className="h-6 w-24 rounded" />
-            )}
-          </h3>
-          <p className="font-light text-muted-foreground text-sm">
-            {values.productInformation?.tagline ? (
-              values.productInformation.tagline
-            ) : (
-              <Skeleton className="h-4 w-40 rounded" />
-            )}
-          </p>
-        </div>
-      </div>
-      {galleryUrls.length > 0 && (
-        <Carousel className="w-full max-w-md">
-          <CarouselContent>
-            {galleryUrls.map((url, idx) => (
-              <CarouselItem className="flex justify-center" key={url}>
-                <img
-                  alt={`Gallery ${idx + 1}`}
-                  className="max-h-72 w-full rounded-lg border bg-muted object-contain"
-                  src={url}
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-      )}
-      {isUploadingGallery && (
-        <Progress className="h-1" value={uploadProgressGallery} />
-      )}
-    </div>
   );
 }

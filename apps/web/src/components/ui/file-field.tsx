@@ -1077,7 +1077,7 @@ function FileUploadItemPreview(props: FileUploadItemPreviewProps) {
 
   const getDefaultRender = React.useCallback(
     (file: File) => {
-      if (itemContext.fileState?.file.type.startsWith("image/")) {
+      if (file?.type?.startsWith("image/")) {
         let url = context.urlCache.get(file);
         if (!url) {
           url = URL.createObjectURL(file);
@@ -1086,13 +1086,19 @@ function FileUploadItemPreview(props: FileUploadItemPreviewProps) {
 
         return (
           // biome-ignore lint/performance/noImgElement: dynamic file URLs from user uploads don't work well with Next.js Image optimization
-          <img alt={file.name} className="size-full object-cover" src={url} />
+          <img
+            alt={file.name}
+            className="size-full object-cover"
+            height={40}
+            src={url}
+            width={40}
+          />
         );
       }
 
       return getFileIcon(file);
     },
-    [itemContext.fileState?.file.type, context.urlCache]
+    [context.urlCache]
   );
 
   const onPreviewRender = React.useCallback(
@@ -1106,7 +1112,7 @@ function FileUploadItemPreview(props: FileUploadItemPreviewProps) {
     [render, getDefaultRender]
   );
 
-  if (!itemContext.fileState) return null;
+  if (!itemContext.fileState?.file) return null;
 
   const ItemPreviewPrimitive = asChild ? Slot : "div";
 

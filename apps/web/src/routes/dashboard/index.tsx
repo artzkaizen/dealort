@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { OverviewAnalytics } from "@/components/dashboard/analytics/overview-analytics";
 import { RevenueInflow } from "@/components/dashboard/analytics/revenue-inflow";
 import { RevenueTable } from "@/components/dashboard/revenue-table";
@@ -12,6 +11,11 @@ import { useDashboardStore } from "@/stores/dashboard-store";
 
 export const Route = createFileRoute("/dashboard/")({
   component: RouteComponent,
+  loader: async () => {
+    // TODO: use queryclient for data fetch
+    // const data = await context.queryClient.fetchQuery(orpc.privateData.queryOptions());
+    // return { data };
+  },
 });
 
 function DashboardSkeleton() {
@@ -74,27 +78,15 @@ function DashboardSkeleton() {
 }
 
 function RouteComponent() {
-  const {
-    data: session,
-    isPending, //loading state
-  } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const { user } = session || {};
   // const privateData = useQuery(orpc.privateData.queryOptions());
 
   const { analyticsDuration, setAnalyticsDuration } = useDashboardStore();
 
-  const [loading, setLoading] = useState(isPending);
-
-  useEffect(() => {
-    setLoading(isPending);
-
-    // const timer = setTimeout(() => setLoading(false), 1400);
-    // return () => clearTimeout(timer);
-  }, [isPending]);
-
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+  // if (loading) {
+  //   return <DashboardSkeleton />;
+  // }
 
   return (
     <main className="px-2 py-5">

@@ -1,7 +1,11 @@
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { ProductForm, type ProductFormData } from "@/components/product-form";
+import {
+  ProductForm,
+  type ProductFormData,
+} from "@/components/dashboard/product-form";
 import {
   Combobox,
   ComboboxAnchor,
@@ -21,39 +25,12 @@ import {
 } from "@/components/ui/tags-input";
 import { authClient } from "@/lib/auth-client";
 import { slugify } from "@/lib/utils";
+import { categories } from "@/utils/constants";
+import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/dashboard/products/new")({
   component: RouteComponent,
 });
-
-export const categories: string[] = [
-  "AI",
-  "SaaS",
-  "Web App",
-  "Mobile App",
-  "Productivity",
-  "Developer Tools",
-  "Open Source",
-  "E-commerce",
-  "Fintech",
-  "HealthTech",
-  "EdTech",
-  "Marketing",
-  "Design",
-  "Gaming",
-  "Cybersecurity",
-  "IoT",
-  "Blockchain",
-  "Hardware",
-  "Social",
-  "Cloud",
-  "Analytics",
-  "VR/AR",
-  "Marketplace",
-  "Remote Work",
-  "API",
-  "No-Code",
-];
 
 interface ComboboxFieldProps {
   name: string;
@@ -71,7 +48,7 @@ export function CategoriesCombobox({
   className,
 }: ComboboxFieldProps) {
   return (
-    <Combobox multiple onValueChange={onChange} value={value}>
+    <Combobox autoHighlight multiple onValueChange={onChange} value={value}>
       <FieldLabel className="pt-0 font-medium text-xs sm:text-sm">
         Categories
       </FieldLabel>
@@ -99,14 +76,11 @@ export function CategoriesCombobox({
 
       <ComboboxContent className="max-h-52 overflow-y-auto" sideOffset={5}>
         <ComboboxEmpty>No category found.</ComboboxEmpty>
-        <ComboboxGroup>
-          <ComboboxGroupLabel>Category</ComboboxGroupLabel>
           {categories.map((category) => (
             <ComboboxItem key={category} outset value={category}>
               {category}
             </ComboboxItem>
           ))}
-        </ComboboxGroup>
       </ComboboxContent>
     </Combobox>
   );
@@ -114,6 +88,10 @@ export function CategoriesCombobox({
 
 function RouteComponent() {
   const router = useRouter();
+
+  const syncMetadataMutation = useMutation({
+    ...orpc.products.syncOrganizationMetadata.mutationOptions(),
+  });
 
   async function handleSubmit(data: ProductFormData) {
     if (data.media.logo.length === 0) {
@@ -123,50 +101,71 @@ function RouteComponent() {
 
     const slug = slugify(data.productInformation.name);
 
-    await authClient.organization.create(
-      {
+    try {
+      // Build the create payload matching BetterAuth schema exactly
+      const createPayload = {
         name: data.productInformation.name,
         slug,
-        logo:
-          data.media.logoUrls && data.media.logoUrls.length > 0
-            ? data.media.logoUrls[0]
-            : "",
-        url: data.getStarted.url,
-        isDev: data.getStarted.isDev,
+        isDev: Boolean(data.getStarted.isDev),
         tagline: data.productInformation.tagline,
-        description: data.productInformation.description,
-        category: data.productInformation.category,
-        xURL: data.productInformation.xUrl,
-        linkedinURL: data.productInformation.linkedinUrl ?? "",
-        isOpenSource: data.productInformation.isOpenSource,
-        sourceCodeURL: data.productInformation.sourceCodeUrl ?? "",
+        description: data.productInformation.description ?? "",
+        category: Array.isArray(data.productInformation.category)
+          ? data.productInformation.category
+          : [],
+        isOpenSource: Boolean(data.productInformation.isOpenSource),
         rating: 0,
         impressions: 0,
-        gallery: data.media.galleryUrls || [],
-        releaseDate: data.getStarted.releaseDate,
-      } as Parameters<typeof authClient.organization.create>[0],
-      {
-        onSuccess: () => {
-          toast.success("Product created successfully");
-          router.navigate({
-            to: "/dashboard/products/$slug",
-            params: { slug },
-          });
-        },
-        onError: (error) => {
-          console.log(error);
-          toast.error(
-            error.error?.message ||
-              error.error?.statusText ||
-              "Failed to create product"
-          );
-        },
+        ...(data.getStarted.releaseDate && {
+          releaseDate: new Date(data.getStarted.releaseDate).toISOString(),
+        }),
+      };
+
+      console.log("Creating organization with payload:", createPayload);
+
+      const result = await authClient.organization.create(
+        createPayload as Parameters<typeof authClient.organization.create>[0],
+        {
+          onError: (error) => {
+            console.error("Organization create error:", error);
+            console.error("Error details:", JSON.stringify(error, null, 2));
+            toast.error(
+              error.error?.message ||
+                error.error?.statusText ||
+                "Failed to create product"
+            );
+          },
+        }
+      );
+
+      if (result.data?.organization?.id) {
+        // Sync metadata to separate tables
+        await syncMetadataMutation.mutateAsync({
+          organizationId: result.data.organization.id,
+          url: data.getStarted.url,
+          xUrl: data.productInformation.xUrl,
+          linkedinUrl: data.productInformation.linkedinUrl,
+          sourceCodeUrl: data.productInformation.sourceCodeUrl,
+          logo:
+            data.media.logoUrls && data.media.logoUrls.length > 0
+              ? data.media.logoUrls[0]
+              : undefined,
+          gallery: data.media.galleryUrls || undefined,
+        });
+
+        toast.success("Product created successfully");
+        router.navigate({
+          to: "/dashboard/products/$slug",
+          params: { slug },
+        });
       }
-    );
+    } catch (error) {
+      console.error("Error creating product:", error);
+      toast.error("Failed to create product");
+    }
   }
 
   return (
-    <main className="grid min-h-screen gap-0 lg:grid-cols-2">
+    <main className="grid min-h-screen gap-0">
       <section className="min-h-screen">
         <div className="flex flex-col gap-2 px-2 py-3">
           <ProductForm mode="new" onSubmit={handleSubmit} />

@@ -27,7 +27,9 @@ import { Route as DashboardSettingsAppearanceRouteImport } from './routes/dashbo
 import { Route as DashboardSettingsAccountsRouteImport } from './routes/dashboard/settings/accounts'
 import { Route as DashboardProductsNewRouteImport } from './routes/dashboard/products/new'
 import { Route as DashboardProductsSlugIndexRouteImport } from './routes/dashboard/products/$slug/index'
+import { Route as PublicProductsSlugIndexRouteImport } from './routes/_public/products/$slug/index'
 import { Route as DashboardProductsSlugEditRouteImport } from './routes/dashboard/products/$slug/edit'
+import { Route as PublicProductsSlugReviewsRouteImport } from './routes/_public/products/$slug/reviews'
 import { Route as DashboardTestTestATestBTestCTestRouteImport } from './routes/dashboard/test/test-a/test-b/test-c/test'
 
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
@@ -125,11 +127,22 @@ const DashboardProductsSlugIndexRoute =
     path: '/products/$slug/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const PublicProductsSlugIndexRoute = PublicProductsSlugIndexRouteImport.update({
+  id: '/products/$slug/',
+  path: '/products/$slug/',
+  getParentRoute: () => PublicLayoutRoute,
+} as any)
 const DashboardProductsSlugEditRoute =
   DashboardProductsSlugEditRouteImport.update({
     id: '/products/$slug/edit',
     path: '/products/$slug/edit',
     getParentRoute: () => DashboardLayoutRoute,
+  } as any)
+const PublicProductsSlugReviewsRoute =
+  PublicProductsSlugReviewsRouteImport.update({
+    id: '/products/$slug/reviews',
+    path: '/products/$slug/reviews',
+    getParentRoute: () => PublicLayoutRoute,
   } as any)
 const DashboardTestTestATestBTestCTestRoute =
   DashboardTestTestATestBTestCTestRouteImport.update({
@@ -155,7 +168,9 @@ export interface FileRoutesByFullPath {
   '/products': typeof PublicProductsIndexRoute
   '/dashboard/products': typeof DashboardProductsIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/products/$slug/reviews': typeof PublicProductsSlugReviewsRoute
   '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
+  '/products/$slug': typeof PublicProductsSlugIndexRoute
   '/dashboard/products/$slug': typeof DashboardProductsSlugIndexRoute
   '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
@@ -174,7 +189,9 @@ export interface FileRoutesByTo {
   '/products': typeof PublicProductsIndexRoute
   '/dashboard/products': typeof DashboardProductsIndexRoute
   '/dashboard/settings': typeof DashboardSettingsIndexRoute
+  '/products/$slug/reviews': typeof PublicProductsSlugReviewsRoute
   '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
+  '/products/$slug': typeof PublicProductsSlugIndexRoute
   '/dashboard/products/$slug': typeof DashboardProductsSlugIndexRoute
   '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
@@ -197,7 +214,9 @@ export interface FileRoutesById {
   '/_public/products/': typeof PublicProductsIndexRoute
   '/dashboard/products/': typeof DashboardProductsIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/_public/products/$slug/reviews': typeof PublicProductsSlugReviewsRoute
   '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
+  '/_public/products/$slug/': typeof PublicProductsSlugIndexRoute
   '/dashboard/products/$slug/': typeof DashboardProductsSlugIndexRoute
   '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
@@ -220,7 +239,9 @@ export interface FileRouteTypes {
     | '/products'
     | '/dashboard/products'
     | '/dashboard/settings/'
+    | '/products/$slug/reviews'
     | '/dashboard/products/$slug/edit'
+    | '/products/$slug'
     | '/dashboard/products/$slug'
     | '/dashboard/test/test-a/test-b/test-c/test'
   fileRoutesByTo: FileRoutesByTo
@@ -239,7 +260,9 @@ export interface FileRouteTypes {
     | '/products'
     | '/dashboard/products'
     | '/dashboard/settings'
+    | '/products/$slug/reviews'
     | '/dashboard/products/$slug/edit'
+    | '/products/$slug'
     | '/dashboard/products/$slug'
     | '/dashboard/test/test-a/test-b/test-c/test'
   id:
@@ -261,7 +284,9 @@ export interface FileRouteTypes {
     | '/_public/products/'
     | '/dashboard/products/'
     | '/dashboard/settings/'
+    | '/_public/products/$slug/reviews'
     | '/dashboard/products/$slug/edit'
+    | '/_public/products/$slug/'
     | '/dashboard/products/$slug/'
     | '/dashboard/test/test-a/test-b/test-c/test'
   fileRoutesById: FileRoutesById
@@ -400,12 +425,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProductsSlugIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_public/products/$slug/': {
+      id: '/_public/products/$slug/'
+      path: '/products/$slug'
+      fullPath: '/products/$slug'
+      preLoaderRoute: typeof PublicProductsSlugIndexRouteImport
+      parentRoute: typeof PublicLayoutRoute
+    }
     '/dashboard/products/$slug/edit': {
       id: '/dashboard/products/$slug/edit'
       path: '/products/$slug/edit'
       fullPath: '/dashboard/products/$slug/edit'
       preLoaderRoute: typeof DashboardProductsSlugEditRouteImport
       parentRoute: typeof DashboardLayoutRoute
+    }
+    '/_public/products/$slug/reviews': {
+      id: '/_public/products/$slug/reviews'
+      path: '/products/$slug/reviews'
+      fullPath: '/products/$slug/reviews'
+      preLoaderRoute: typeof PublicProductsSlugReviewsRouteImport
+      parentRoute: typeof PublicLayoutRoute
     }
     '/dashboard/test/test-a/test-b/test-c/test': {
       id: '/dashboard/test/test-a/test-b/test-c/test'
@@ -421,12 +460,16 @@ interface PublicLayoutRouteChildren {
   PublicLaunchesRoute: typeof PublicLaunchesRoute
   PublicIndexRoute: typeof PublicIndexRoute
   PublicProductsIndexRoute: typeof PublicProductsIndexRoute
+  PublicProductsSlugReviewsRoute: typeof PublicProductsSlugReviewsRoute
+  PublicProductsSlugIndexRoute: typeof PublicProductsSlugIndexRoute
 }
 
 const PublicLayoutRouteChildren: PublicLayoutRouteChildren = {
   PublicLaunchesRoute: PublicLaunchesRoute,
   PublicIndexRoute: PublicIndexRoute,
   PublicProductsIndexRoute: PublicProductsIndexRoute,
+  PublicProductsSlugReviewsRoute: PublicProductsSlugReviewsRoute,
+  PublicProductsSlugIndexRoute: PublicProductsSlugIndexRoute,
 }
 
 const PublicLayoutRouteWithChildren = PublicLayoutRoute._addFileChildren(

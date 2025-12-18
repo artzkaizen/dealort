@@ -66,3 +66,17 @@ export const categories: string[] = [
   "payments",
   "collaboration",
 ];
+
+/**
+ * Common reasons for reporting comments, reviews, etc.
+ */
+export const reportReasons: string[] = [
+  "Spam",
+  "Harassment or bullying",
+  "Hate speech",
+  "Inappropriate content",
+  "False information",
+  "Copyright violation",
+  "Privacy violation",
+  "Other",
+];

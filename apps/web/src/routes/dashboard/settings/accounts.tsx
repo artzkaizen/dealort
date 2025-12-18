@@ -72,9 +72,9 @@ function RouteComponent() {
           {accounts?.map((account) => (
             <Card className="flex flex-row justify-between" key={account.id}>
               <CardHeader className="flex flex-1 flex-col gap-2">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 capitalize">
                   {account.providerId === "github" ? (
-                    <GithubIcon className="size-6" />
+                    <GithubIcon className="size-6 dark:invert" />
                   ) : (
                     <GoogleIcon className="size-6" />
                   )}

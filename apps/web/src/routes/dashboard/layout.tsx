@@ -19,21 +19,19 @@ export const Route = createFileRoute("/dashboard")({
     }
     return { session };
   },
+  loader: async () => {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const { data: session } = await authClient.getSession();
+    return { session };
+  },
+  pendingComponent: () => (
+    <div className="flex min-h-screen items-center justify-center">
+      <Spinner className="size-8" />
+    </div>
+  ),
 });
 
 function RouteComponent() {
-  const {
-    isPending, //loading state
-  } = authClient.useSession();
-
-  if (isPending) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="size-8" />
-      </div>
-    );
-  }
-
   return (
     <NuqsAdapter>
       <SidebarProvider>

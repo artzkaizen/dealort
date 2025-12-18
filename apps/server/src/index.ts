@@ -199,7 +199,9 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
 export const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
     onError((error) => {
-      console.error(error);
+      console.error("RPC Error:", error);
+      console.error("Error stack:", error.stack);
+      console.error("Error message:", error.message);
     }),
   ],
 });
@@ -227,4 +229,11 @@ app.use("/*", async (c, next) => {
 
   await next();
 });
-export default app;
+
+// Start the server
+const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000;
+
+export default {
+  port,
+  fetch: app.fetch,
+};

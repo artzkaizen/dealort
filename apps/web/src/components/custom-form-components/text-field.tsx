@@ -40,7 +40,7 @@ export function TextField({
     <div className={`w-full ${className}`}>
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-px">
-          <FormLabel className="text-foreground text-xs sm:text-sm">
+          <FormLabel className="text-foreground text-xs capitalize sm:text-sm">
             {label}
             {required ? <span className="text-destructive">*</span> : null}
           </FormLabel>

@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { organizationAsset, organizationReference } from "./org_meta";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -138,21 +139,15 @@ export const organization = sqliteTable("organization", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  logo: text("logo"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   metadata: text("metadata"),
-  url: text("url").notNull(),
   isDev: integer("is_dev", { mode: "boolean" }).notNull(),
   tagline: text("tagline").notNull(),
   description: text("description"),
   category: text("category", { mode: "json" }).notNull(),
-  xURL: text("x_url").notNull(),
-  linkedinURL: text("linkedin_url"),
   isOpenSource: integer("is_open_source", { mode: "boolean" }).notNull(),
-  sourceCodeURL: text("source_code_url"),
   rating: integer("rating").notNull(),
   impressions: integer("impressions").notNull(),
-  gallery: text("gallery", { mode: "json" }),
   releaseDate: integer("release_date", { mode: "timestamp_ms" }),
 });
 
@@ -206,6 +201,60 @@ export const rateLimit = sqliteTable("rate_limit", {
   lastRequest: integer("last_request"),
 });
 
+/**
+ * Organization impressions - tracks when users view/like an organization
+ * Used to track impressions count for organizations
+ */
+export const organizationImpression = sqliteTable(
+  "organization_impression",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type").notNull().default("view"), // 'view' or 'like'
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+  },
+  (table) => [
+    index("organizationImpression_organizationId_idx").on(table.organizationId),
+    index("organizationImpression_userId_idx").on(table.userId),
+    index("organizationImpression_type_idx").on(table.type),
+  ]
+);
+
+/**
+ * Follow table - tracks user follows for organizations/products
+ */
+export const follow = sqliteTable(
+  "follow",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+  },
+  (table) => [
+    index("follow_organizationId_idx").on(table.organizationId),
+    index("follow_userId_idx").on(table.userId),
+    // Ensure one follow per user-organization pair
+    index("follow_userId_organizationId_idx").on(
+      table.userId,
+      table.organizationId
+    ),
+  ]
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -213,6 +262,9 @@ export const userRelations = relations(user, ({ many }) => ({
   twoFactors: many(twoFactor),
   members: many(member),
   invitations: many(invitation),
+  organizationImpressions: many(organizationImpression),
+  follows: many(follow),
+  // Reviews and comments relations are defined in reviews.ts
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -246,6 +298,36 @@ export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
 export const organizationRelations = relations(organization, ({ many }) => ({
   members: many(member),
   invitations: many(invitation),
+  impressions: many(organizationImpression),
+  follows: many(follow),
+  references: many(organizationReference),
+  assets: many(organizationAsset),
+  // Reviews and comments relations are defined in reviews.ts
+}));
+
+export const organizationImpressionRelations = relations(
+  organizationImpression,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [organizationImpression.organizationId],
+      references: [organization.id],
+    }),
+    user: one(user, {
+      fields: [organizationImpression.userId],
+      references: [user.id],
+    }),
+  })
+);
+
+export const followRelations = relations(follow, ({ one }) => ({
+  organization: one(organization, {
+    fields: [follow.organizationId],
+    references: [organization.id],
+  }),
+  user: one(user, {
+    fields: [follow.userId],
+    references: [user.id],
+  }),
 }));
 
 export const memberRelations = relations(member, ({ one }) => ({

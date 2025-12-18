@@ -1,8 +1,13 @@
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { ProductForm, type ProductFormData } from "@/components/product-form";
+import {
+  ProductForm,
+  type ProductFormData,
+} from "@/components/dashboard/product-form";
 import { authClient } from "@/lib/auth-client";
 import { slugify } from "@/lib/utils";
+import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/dashboard/products/$slug/edit")({
   loader: async ({ params }) => {
@@ -46,6 +51,10 @@ function RouteComponent() {
   const { organization } = Route.useLoaderData();
   const router = useRouter();
 
+  const syncMetadataMutation = useMutation({
+    ...orpc.products.syncOrganizationMetadata.mutationOptions(),
+  });
+
   // Type assertion for organization with additional fields
   const org = organization as typeof organization & {
     url?: string;
@@ -60,12 +69,26 @@ function RouteComponent() {
     sourceCodeURL?: string;
     logo?: string;
     gallery?: string[];
+    references?: Array<{
+      webUrl: string;
+      xUrl: string;
+      linkedinUrl?: string | null;
+      sourceCodeUrl?: string | null;
+    }>;
+    assets?: Array<{
+      logo?: string | null;
+      gallery?: string[] | null;
+    }>;
   };
+
+  // Get references and assets from normalized tables
+  const ref = org.references?.[0];
+  const asset = org.assets?.[0];
 
   // Transform organization data to form format
   const initialValues: Partial<ProductFormData> = {
     getStarted: {
-      url: org.url || "",
+      url: ref?.webUrl || org.url || "",
       isDev: org.isDev ?? false,
       releaseDate: org.releaseDate ? new Date(org.releaseDate) : undefined,
     },
@@ -74,10 +97,10 @@ function RouteComponent() {
       tagline: org.tagline || "",
       description: org.description || "",
       category: (org.category as string[]) || [],
-      xUrl: org.xURL || "",
-      linkedinUrl: org.linkedinURL || "",
+      xUrl: ref?.xUrl || org.xURL || "",
+      linkedinUrl: ref?.linkedinUrl || org.linkedinURL || "",
       isOpenSource: org.isOpenSource ?? false,
-      sourceCodeUrl: org.sourceCodeURL || "",
+      sourceCodeUrl: ref?.sourceCodeUrl || org.sourceCodeURL || "",
     },
     media: {
       logo: [],
@@ -87,11 +110,12 @@ function RouteComponent() {
 
   function buildGetStartedData(data: ProductFormData): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
-    if (data.getStarted.url) updateData.url = data.getStarted.url;
     if (typeof data.getStarted.isDev === "boolean")
       updateData.isDev = data.getStarted.isDev;
     if (data.getStarted.releaseDate)
-      updateData.releaseDate = data.getStarted.releaseDate;
+      updateData.releaseDate = new Date(
+        data.getStarted.releaseDate
+      ).toISOString();
     return updateData;
   }
 
@@ -115,50 +139,25 @@ function RouteComponent() {
       data.productInformation.category.length > 0
     )
       updateData.category = data.productInformation.category;
-    if (data.productInformation.xUrl)
-      updateData.xURL = data.productInformation.xUrl;
-    if (data.productInformation.linkedinUrl)
-      updateData.linkedinURL = data.productInformation.linkedinUrl;
     if (typeof data.productInformation.isOpenSource === "boolean")
       updateData.isOpenSource = data.productInformation.isOpenSource;
-    if (data.productInformation.sourceCodeUrl)
-      updateData.sourceCodeURL = data.productInformation.sourceCodeUrl;
     return updateData;
-  }
-
-  function buildUpdateData(
-    data: ProductFormData,
-    logoUrl: string | undefined,
-    galleryUrls: string[]
-  ): Record<string, unknown> {
-    return {
-      ...buildGetStartedData(data),
-      ...buildProductInfoData(data),
-      ...(logoUrl && { logo: logoUrl }),
-      ...(galleryUrls.length > 0 && { gallery: galleryUrls }),
-    };
   }
 
   async function handleSubmit(data: ProductFormData) {
     try {
-      const logoUrl = data.media.logoUrls?.[0] || org.logo;
-      const galleryUrls =
-        data.media.galleryUrls || (org.gallery as string[]) || [];
-      const updateData = buildUpdateData(data, logoUrl, galleryUrls);
+      const updateData = {
+        ...buildGetStartedData(data),
+        ...buildProductInfoData(data),
+      };
 
+      // Update organization basic fields
       await authClient.organization.update(
         {
           organizationId: org.id,
           data: updateData,
         },
         {
-          onSuccess: () => {
-            toast.success("Product updated successfully");
-            router.navigate({
-              to: "/dashboard/products/$slug",
-              params: { slug: org.slug },
-            });
-          },
           onError: (error) => {
             console.error(error);
             toast.error(
@@ -169,6 +168,30 @@ function RouteComponent() {
           },
         }
       );
+
+      // Sync metadata (URLs and assets) to separate tables
+      const logoUrl = data.media.logoUrls?.[0] || asset?.logo || org.logo;
+      const galleryUrls =
+        data.media.galleryUrls ||
+        (asset?.gallery as string[]) ||
+        (org.gallery as string[]) ||
+        [];
+
+      await syncMetadataMutation.mutateAsync({
+        organizationId: org.id,
+        url: data.getStarted.url,
+        xUrl: data.productInformation.xUrl,
+        linkedinUrl: data.productInformation.linkedinUrl,
+        sourceCodeUrl: data.productInformation.sourceCodeUrl,
+        logo: logoUrl,
+        gallery: galleryUrls.length > 0 ? galleryUrls : undefined,
+      });
+
+      toast.success("Product updated successfully");
+      router.navigate({
+        to: "/dashboard/products/$slug",
+        params: { slug: org.slug },
+      });
     } catch (error) {
       console.error(error);
       toast.error("Failed to update product");

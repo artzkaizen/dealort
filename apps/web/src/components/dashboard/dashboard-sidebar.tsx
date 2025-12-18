@@ -7,7 +7,6 @@ import {
   PackageIcon,
   Settings,
   User,
-  Users,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -50,11 +49,11 @@ const dashboardLinks = [
     label: "Products",
     icon: PackageIcon,
   },
-  {
-    path: "/dashboard/users",
-    label: "Users",
-    icon: Users,
-  },
+  // {
+  //   path: "/dashboard/users",
+  //   label: "Users",
+  //   icon: Users,
+  // },
   // {
   //   path: "/dashboard/settings",
   //   label: "Settings",
