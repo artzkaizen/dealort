@@ -89,7 +89,7 @@ function RouteComponent() {
   // }
 
   return (
-    <main className="px-2 py-5">
+    <main className="px-2 py-5 max-w-screen">
       <section className="flex flex-col gap-1">
         <h1 className="font-bold text-2xl sm:text-4xl">
           Hi, {user?.name.split(" ")[0]}
@@ -143,10 +143,10 @@ function RouteComponent() {
         </section>
       </section>
 
-      <hr className="my-10 py-px" />
+      {/* <hr className="my-10 py-px" /> */}
 
-      <section className="mt-5 rounded-lg bg-popover">
-        <RevenueTable />
+      <section className="mt-5 rounded-lg bg-popover overflow-x-auto bg-red-500">
+        {/* <RevenueTable /> */}
       </section>
     </main>
   );

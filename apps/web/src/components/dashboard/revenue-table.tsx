@@ -416,7 +416,7 @@ export function RevenueTable() {
 
   return (
     <div>
-      <DataTable className="max-w-70vw overflow-x-hidden" table={table}>
+      <DataTable className="overflow-x-hidden" table={table}>
         <DataTableAdvancedToolbar table={table}>
           <DataTableFilterList table={table} />
           <DataTableSortList table={table} />

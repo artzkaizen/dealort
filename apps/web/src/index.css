@@ -8,7 +8,15 @@
 
 @font-face {
   font-family: "Lexend";
-  src: url("/assets/fonts/Lexend/Lexend-Regular.ttf");
+  src: url("../assets/fonts/Lexend/Lexend-Regular.ttf");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Clash Display";
+  src: url("../src/assets/fonts/Clash-display/ClashDisplay-Regular.otf")
+    format("truetype");
   font-weight: 500;
   font-style: normal;
 }
@@ -18,6 +26,7 @@
     "Inter", "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-lexend: "Lexend", sans-serif;
+  --font-clash-display: "Clash Display", sans-serif;
 }
 
 html,

@@ -2,6 +2,7 @@ import { db } from "@dealort/db";
 import type { RouterClient } from "@orpc/server";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../index";
+import { analyticsRouter } from "./analytics";
 import { commentsRouter } from "./comments";
 import { productsRouter } from "./products";
 import { reportsRouter } from "./reports";
@@ -36,6 +37,8 @@ export const appRouter = {
   comments: commentsRouter,
   // Report routes
   reports: reportsRouter,
+  // Analytics routes
+  analytics: analyticsRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

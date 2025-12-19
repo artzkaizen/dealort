@@ -13,6 +13,7 @@ import { Route as DashboardLayoutRouteImport } from './routes/dashboard/layout'
 import { Route as PublicLayoutRouteImport } from './routes/_public/layout'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as PublicLaunchesRouteImport } from './routes/_public/launches'
 import { Route as DashboardSettingsLayoutRouteImport } from './routes/dashboard/settings/layout'
@@ -50,6 +51,11 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PublicLayoutRoute,
+} as any)
+const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => DashboardLayoutRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsLayoutRouteWithChildren
   '/launches': typeof PublicLaunchesRoute
   '/auth/login': typeof AuthLoginRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/': typeof PublicIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/products/new': typeof DashboardProductsNewRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/launches': typeof PublicLaunchesRoute
   '/auth/login': typeof AuthLoginRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/': typeof PublicIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/products/new': typeof DashboardProductsNewRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsLayoutRouteWithChildren
   '/_public/launches': typeof PublicLaunchesRoute
   '/auth/login': typeof AuthLoginRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/_public/': typeof PublicIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/products/new': typeof DashboardProductsNewRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/launches'
     | '/auth/login'
+    | '/dashboard/analytics'
     | '/'
     | '/dashboard/'
     | '/dashboard/products/new'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
   to:
     | '/launches'
     | '/auth/login'
+    | '/dashboard/analytics'
     | '/'
     | '/dashboard'
     | '/dashboard/products/new'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/_public/launches'
     | '/auth/login'
+    | '/dashboard/analytics'
     | '/_public/'
     | '/dashboard/'
     | '/dashboard/products/new'
@@ -326,6 +338,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof PublicIndexRouteImport
       parentRoute: typeof PublicLayoutRoute
+    }
+    '/dashboard/analytics': {
+      id: '/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof DashboardAnalyticsRouteImport
+      parentRoute: typeof DashboardLayoutRoute
     }
     '/auth/login': {
       id: '/auth/login'
@@ -504,6 +523,7 @@ const DashboardSettingsLayoutRouteWithChildren =
 
 interface DashboardLayoutRouteChildren {
   DashboardSettingsLayoutRoute: typeof DashboardSettingsLayoutRouteWithChildren
+  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardProductsNewRoute: typeof DashboardProductsNewRoute
   DashboardProductsIndexRoute: typeof DashboardProductsIndexRoute
@@ -514,6 +534,7 @@ interface DashboardLayoutRouteChildren {
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardSettingsLayoutRoute: DashboardSettingsLayoutRouteWithChildren,
+  DashboardAnalyticsRoute: DashboardAnalyticsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardProductsNewRoute: DashboardProductsNewRoute,
   DashboardProductsIndexRoute: DashboardProductsIndexRoute,

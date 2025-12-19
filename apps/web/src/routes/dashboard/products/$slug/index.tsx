@@ -268,9 +268,9 @@ function RouteComponent() {
           <div className="rounded-lg border bg-card p-6 shadow-sm">
             <h2 className="mb-4 font-semibold text-xl">Details</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
-                  Product URL
+                  Product Website
                 </span>
                 {url ? (
                   <a
@@ -279,7 +279,7 @@ function RouteComponent() {
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {url}
+                    Visit Website
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -287,9 +287,9 @@ function RouteComponent() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
-                  X (Twitter) URL
+                  X (Twitter)
                 </span>
                 {xURL ? (
                   <a
@@ -298,7 +298,7 @@ function RouteComponent() {
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {xURL}
+                    Visit X
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -306,9 +306,9 @@ function RouteComponent() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
-                  LinkedIn URL
+                  LinkedIn
                 </span>
                 {linkedinURL ? (
                   <a
@@ -317,7 +317,7 @@ function RouteComponent() {
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {linkedinURL}
+                    Visit LinkedIn
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -325,9 +325,9 @@ function RouteComponent() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
-                  Source Code URL
+                  Source Code
                 </span>
                 {sourceCodeURL ? (
                   <a
@@ -336,7 +336,7 @@ function RouteComponent() {
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    {sourceCodeURL}
+                    Visit Source Code
                     <ExternalLinkIcon className="size-4" />
                   </a>
                 ) : (
@@ -344,7 +344,7 @@ function RouteComponent() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
                   Release Date
                 </span>
@@ -357,7 +357,7 @@ function RouteComponent() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
                   Status
                 </span>
@@ -366,7 +366,7 @@ function RouteComponent() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
                   Open Source
                 </span>
@@ -375,7 +375,7 @@ function RouteComponent() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex max-w-sm flex-col gap-1 max-sm:col-span-2">
                 <span className="font-medium text-muted-foreground text-sm">
                   Categories
                 </span>

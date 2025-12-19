@@ -69,31 +69,42 @@ function RouteComponent() {
     ...orpc.products.syncOrganizationMetadata.mutationOptions(),
   });
 
-  // Get references from normalized tables
+  // Infer a defined type on the organization to prevent type errors
+
+  const betterOrg = organization as typeof organization & {
+    isDev: boolean;
+    releaseDate: Date;
+    isListed: boolean;
+    tagline: string;
+    description: string;
+    category: string[];
+    isOpenSource: boolean;
+    gallery: string[];
+  };
 
   // Transform organization data to form format
   const initialValues: Partial<ProductFormData> = {
     getStarted: {
-      url: organization?.references?.webUrl || "",
-      isDev: organization?.isDev ?? false,
-      releaseDate: organization?.releaseDate
-        ? new Date(organization?.releaseDate)
+      url: betterOrg?.references?.webUrl || "",
+      isDev: betterOrg?.isDev ?? false,
+      releaseDate: betterOrg?.releaseDate
+        ? new Date(betterOrg?.releaseDate)
         : undefined,
-      isListed: organization?.isListed ?? false,
+      isListed: betterOrg?.isListed ?? false,
     },
     productInformation: {
-      name: organization?.name ?? "",
-      tagline: organization?.tagline ?? "",
-      description: organization?.description ?? "",
-      category: organization?.category ?? [],
-      xUrl: organization?.references?.xUrl ?? "",
-      linkedinUrl: organization?.references?.linkedinUrl ?? "",
-      isOpenSource: organization?.isOpenSource ?? false,
-      sourceCodeUrl: organization?.references?.sourceCodeUrl ?? "",
+      name: betterOrg?.name ?? "",
+      tagline: betterOrg?.tagline ?? "",
+      description: betterOrg?.description ?? "",
+      category: betterOrg?.category ?? [],
+      xUrl: betterOrg?.references?.xUrl ?? "",
+      linkedinUrl: betterOrg?.references?.linkedinUrl ?? "",
+      isOpenSource: betterOrg?.isOpenSource ?? false,
+      sourceCodeUrl: betterOrg?.references?.sourceCodeUrl ?? "",
     },
     media: {
-      logo: [],
-      gallery: [],
+      logo: betterOrg?.logo ? [betterOrg.logo] : [],
+      gallery: betterOrg?.gallery ? [betterOrg.gallery] : [],
     },
   };
 
@@ -136,9 +147,8 @@ function RouteComponent() {
   async function handleSubmit(data: ProductFormData) {
     try {
       // Get logo and gallery URLs
-      const logoUrl = data.media.logoUrls?.[0] || organization?.logo;
-      const galleryUrls =
-        data.media.galleryUrls || (organization?.gallery as string[]) || [];
+      const logoUrl = data.media.logoUrls?.[0] || betterOrg?.logo;
+      const galleryUrls = data.media.galleryUrls || betterOrg?.gallery || [];
 
       const updateData = {
         ...buildGetStartedData(data),

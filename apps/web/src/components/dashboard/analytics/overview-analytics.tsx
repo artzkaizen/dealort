@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import {
@@ -6,60 +7,97 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { useDashboardStore } from "@/stores/dashboard-store";
-
-const analyticsCardsData = [
-  {
-    label: "Revenue",
-    value: "$612.10",
-    change: {
-      value: "+$36.15",
-      positive: true,
-      percent: "+6.3%",
-    },
-    info: "Last 30 Days",
-    icon: <ArrowUpRight className="size-4 text-green-500" />,
-  },
-  {
-    label: "Impressions",
-    value: "42,243",
-    change: {
-      value: "+12,451",
-      positive: true,
-      percent: "+4.8%",
-    },
-    info: "Last 30 Days",
-    icon: <ArrowUpRight className="size-4 text-green-500" />,
-  },
-  {
-    label: "Ratings",
-    value: "1605",
-    change: {
-      value: "+305",
-      positive: true,
-      percent: "+23.5%",
-    },
-    info: "Last 30 Days",
-    icon: <ArrowUpRight className="size-4 text-green-500" />,
-  },
-  {
-    label: "Expectancy",
-    value: "3.2%",
-    change: {
-      value: "-8.1%",
-      positive: false,
-      percent: "-8.1%",
-    },
-    info: "Last 30 Days",
-    icon: <ArrowDownRight className="size-4 text-red-500" />,
-  },
-];
+import { client } from "@/utils/orpc";
 
 export function OverviewAnalytics() {
   const { analyticsDuration } = useDashboardStore();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  // Here, analyticsDuration can be used to dynamically query/fetch data.
-  // In this static example, just inject the value where "Last 30 Days" is used.
+  // Fetch analytics data
+  const { data: analyticsData, isLoading } = useQuery({
+    queryKey: ["analytics", "getOverviewAnalytics", userId, analyticsDuration],
+    queryFn: () =>
+      client.analytics.getOverviewAnalytics({
+        userId: userId || "",
+        duration: analyticsDuration,
+      }),
+    enabled: !!userId,
+  });
+
+  // Build cards data from API response
+  const analyticsCardsData = [
+    {
+      label: "Revenue",
+      value: "Coming Soon!",
+      change: {
+        value: "Comimg Soon!!",
+        positive: true,
+        percent: "+0%",
+      },
+      icon: <ArrowUpRight className="size-4 text-green-500" />,
+    },
+    {
+      label: "Impressions",
+      value: analyticsData?.impressions?.value || "0",
+      change: analyticsData?.impressions?.change || {
+        value: "+0",
+        positive: true,
+        percent: "+0%",
+      },
+      icon: analyticsData?.impressions?.change?.positive ? (
+        <ArrowUpRight className="size-4 text-green-500" />
+      ) : (
+        <ArrowDownRight className="size-4 text-red-500" />
+      ),
+    },
+    {
+      label: "Ratings",
+      value: analyticsData?.ratings?.value || "0",
+      change: analyticsData?.ratings?.change || {
+        value: "+0",
+        positive: true,
+        percent: "+0%",
+      },
+      icon: analyticsData?.ratings?.change?.positive ? (
+        <ArrowUpRight className="size-4 text-green-500" />
+      ) : (
+        <ArrowDownRight className="size-4 text-red-500" />
+      ),
+    },
+    {
+      label: "Expectancy",
+      value: "Coming Soon!",
+      change: {
+        value: "+0%",
+        positive: true,
+        percent: "+0%",
+      },
+      icon: <ArrowUpRight className="size-4 text-green-500" />,
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {["revenue", "impressions", "ratings", "expectancy"].map((label) => (
+          <Card className="border-none bg-popover shadow-sm" key={label}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-4" />
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Skeleton className="mb-2 h-8 w-24" />
+              <Skeleton className="h-4 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
