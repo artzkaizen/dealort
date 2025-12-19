@@ -234,6 +234,20 @@ const authConfig: BetterAuthOptions = {
                 return null;
               },
             },
+            isListed: {
+              type: "boolean",
+              required: true,
+              defaultValue() {
+                return false;
+              },
+            },
+            gallery: {
+              type: "string[]",
+              required: false,
+              defaultValue() {
+                return [];
+              },
+            },
           },
         },
       },

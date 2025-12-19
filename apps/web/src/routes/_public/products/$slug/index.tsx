@@ -4,7 +4,12 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import {
   ArrowBigUp,
@@ -53,6 +58,30 @@ import { formatNumber, formatShortTime } from "@/lib/utils";
 import { client, orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_public/products/$slug/")({
+  beforeLoad: async ({ params }) => {
+    try {
+      // Check if the product is listed
+      const product = await client.products.getBySlug({
+        slug: params.slug,
+      });
+
+      // If product doesn't exist or is not listed, redirect to products page
+      if (!(product && (product as { isListed?: boolean }).isListed)) {
+        throw redirect({
+          to: "/products",
+        });
+      }
+    } catch (error) {
+      // If it's already a redirect, re-throw it
+      if (error && typeof error === "object" && "status" in error) {
+        throw error;
+      }
+      // Otherwise redirect to products page
+      throw redirect({
+        to: "/products",
+      });
+    }
+  },
   component: ProductDetailPage,
 });
 
@@ -63,10 +92,11 @@ function ProductDetailPage() {
   const { data: session } = authClient.useSession();
   const isAuthenticated = !!session;
 
-  // Fetch product data
-  const { data: product, isLoading: productLoading } = useQuery(
-    orpc.products.getBySlug.queryOptions({ input: { slug } })
-  );
+  // Fetch product data (use raw ORPC client instead of query utils here)
+  const { data: product, isLoading: productLoading } = useQuery({
+    queryKey: ["products", "getBySlug", slug],
+    queryFn: () => client.products.getBySlug({ slug }),
+  });
 
   // Fetch reviews with infinite query (not used directly but kept for future use)
   useInfiniteQuery({
@@ -107,18 +137,18 @@ function ProductDetailPage() {
   const likeMutation = useMutation({
     ...orpc.products.toggleLike.mutationOptions(),
     onSuccess: () => {
-      queryClient.invalidateQueries(
-        orpc.products.getBySlug.queryOptions({ input: { slug } })
-      );
+      queryClient.invalidateQueries({
+        queryKey: ["products", "getBySlug", slug],
+      });
     },
   });
 
   const followMutation = useMutation({
     ...orpc.products.toggleFollow.mutationOptions(),
     onSuccess: () => {
-      queryClient.invalidateQueries(
-        orpc.products.getBySlug.queryOptions({ input: { slug } })
-      );
+      queryClient.invalidateQueries({
+        queryKey: ["products", "getBySlug", slug],
+      });
     },
   });
 
@@ -126,9 +156,9 @@ function ProductDetailPage() {
     ...orpc.reviews.create.mutationOptions(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "list"] });
-      queryClient.invalidateQueries(
-        orpc.products.getBySlug.queryOptions({ input: { slug } })
-      );
+      queryClient.invalidateQueries({
+        queryKey: ["products", "getBySlug", slug],
+      });
       setReviewDialogOpen(false);
       setReviewRating(0);
       setReviewContent("");

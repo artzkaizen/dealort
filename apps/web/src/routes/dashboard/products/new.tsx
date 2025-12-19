@@ -1,90 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   ProductForm,
   type ProductFormData,
 } from "@/components/dashboard/product-form";
-import {
-  Combobox,
-  ComboboxAnchor,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxGroupLabel,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxTrigger,
-} from "@/components/ui/dice-combobox";
-import { FieldLabel } from "@/components/ui/field";
-import {
-  TagsInput,
-  TagsInputInput,
-  TagsInputItem,
-} from "@/components/ui/tags-input";
 import { authClient } from "@/lib/auth-client";
 import { slugify } from "@/lib/utils";
-import { categories } from "@/utils/constants";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/dashboard/products/new")({
   component: RouteComponent,
 });
-
-interface ComboboxFieldProps {
-  name: string;
-  value: string[];
-  onChange: (value: string[]) => void;
-  onBlur: () => void;
-  className?: string;
-}
-
-export function CategoriesCombobox({
-  name,
-  value = [],
-  onChange,
-  onBlur,
-  className,
-}: ComboboxFieldProps) {
-  return (
-    <Combobox autoHighlight multiple onValueChange={onChange} value={value}>
-      <FieldLabel className="pt-0 font-medium text-xs sm:text-sm">
-        Categories
-      </FieldLabel>
-      <ComboboxAnchor asChild>
-        <TagsInput
-          className={`relative flex h-full min-h-10 w-full flex-row flex-wrap items-center justify-start gap-1.5 px-2.5 py-2 ${className}`}
-          name={name}
-          onBlur={onBlur}
-          onValueChange={onChange}
-          value={value}
-        >
-          {value.map((item) => (
-            <TagsInputItem key={item} value={item}>
-              {item}
-            </TagsInputItem>
-          ))}
-          <ComboboxInput asChild className="h-fit flex-1 p-0">
-            <TagsInputInput placeholder="Categories..." />
-          </ComboboxInput>
-          <ComboboxTrigger className="absolute top-2.5 right-2">
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </ComboboxTrigger>
-        </TagsInput>
-      </ComboboxAnchor>
-
-      <ComboboxContent className="max-h-52 overflow-y-auto" sideOffset={5}>
-        <ComboboxEmpty>No category found.</ComboboxEmpty>
-          {categories.map((category) => (
-            <ComboboxItem key={category} outset value={category}>
-              {category}
-            </ComboboxItem>
-          ))}
-      </ComboboxContent>
-    </Combobox>
-  );
-}
 
 function RouteComponent() {
   const router = useRouter();
@@ -102,23 +29,49 @@ function RouteComponent() {
     const slug = slugify(data.productInformation.name);
 
     try {
+      // Upload files first
+      let logoUrl: string | undefined;
+      let galleryUrls: string[] = [];
+
+      if (data.media.logoUrls && data.media.logoUrls.length > 0) {
+        logoUrl = data.media.logoUrls[0];
+      }
+
+      if (data.media.galleryUrls && data.media.galleryUrls.length > 0) {
+        galleryUrls = data.media.galleryUrls;
+      }
+
       // Build the create payload matching BetterAuth schema exactly
-      const createPayload = {
+      const createPayload: Record<string, unknown> = {
         name: data.productInformation.name,
         slug,
         isDev: Boolean(data.getStarted.isDev),
         tagline: data.productInformation.tagline,
-        description: data.productInformation.description ?? "",
         category: Array.isArray(data.productInformation.category)
           ? data.productInformation.category
           : [],
         isOpenSource: Boolean(data.productInformation.isOpenSource),
         rating: 0,
         impressions: 0,
-        ...(data.getStarted.releaseDate && {
-          releaseDate: new Date(data.getStarted.releaseDate).toISOString(),
-        }),
+        isListed: Boolean(data.getStarted.isListed),
       };
+
+      // Only add optional fields if they have values (BetterAuth may reject empty strings for optional fields)
+      if (data.productInformation.description) {
+        createPayload.description = data.productInformation.description;
+      }
+      if (logoUrl) {
+        createPayload.logo = logoUrl;
+      }
+      if (galleryUrls.length > 0) {
+        createPayload.gallery = galleryUrls;
+      }
+      // BetterAuth date type expects ISO string format
+      // if (data.getStarted.releaseDate) {
+      //   createPayload.releaseDate = new Date(
+      //     data.getStarted.releaseDate
+      //   ).getTime();
+      // }
 
       console.log("Creating organization with payload:", createPayload);
 
@@ -137,19 +90,15 @@ function RouteComponent() {
         }
       );
 
-      if (result.data?.organization?.id) {
-        // Sync metadata to separate tables
+      if (result.data?.id) {
+        // Sync URLs to separate table
         await syncMetadataMutation.mutateAsync({
-          organizationId: result.data.organization.id,
-          url: data.getStarted.url,
-          xUrl: data.productInformation.xUrl,
-          linkedinUrl: data.productInformation.linkedinUrl,
-          sourceCodeUrl: data.productInformation.sourceCodeUrl,
-          logo:
-            data.media.logoUrls && data.media.logoUrls.length > 0
-              ? data.media.logoUrls[0]
-              : undefined,
-          gallery: data.media.galleryUrls || undefined,
+          organizationId: result.data.id,
+          // Only send valid URLs; omit empty strings so Zod url() passes
+          url: data.getStarted.url || undefined,
+          xUrl: data.productInformation.xUrl || undefined,
+          linkedinUrl: data.productInformation.linkedinUrl || undefined,
+          sourceCodeUrl: data.productInformation.sourceCodeUrl || undefined,
         });
 
         toast.success("Product created successfully");

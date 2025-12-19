@@ -36,11 +36,17 @@ function RouteComponent() {
   const { data: organizations } = authClient.useListOrganizations();
   const [currentPage, setCurrentPage] = useState(1);
 
+  const removeNullOrganizations = organizations?.filter(
+    (organization) => organization !== null
+  );
+
   // Calculate pagination
-  const totalPages = Math.ceil((organizations?.length ?? 0) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    (removeNullOrganizations?.length ?? 0) / ITEMS_PER_PAGE
+  );
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedOrganizations = (organizations ?? []).slice(
+  const paginatedOrganizations = (removeNullOrganizations ?? []).slice(
     startIndex,
     endIndex
   );
@@ -66,7 +72,7 @@ function RouteComponent() {
       </section>
 
       <section className="border px-2 py-4">
-        {!organizations || organizations.length === 0 ? (
+        {!removeNullOrganizations || removeNullOrganizations.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-muted-foreground text-sm">No products found</p>
           </div>
@@ -161,8 +167,8 @@ function RouteComponent() {
               <div className="mt-6 flex items-center justify-between border-t pt-4">
                 <div className="flex-1 text-muted-foreground text-sm max-lg:hidden">
                   Showing {startIndex + 1} to{" "}
-                  {Math.min(endIndex, organizations.length)} of{" "}
-                  {organizations.length} products
+                  {Math.min(endIndex, removeNullOrganizations.length)} of{" "}
+                  {removeNullOrganizations.length} products
                 </div>
                 <div className="flex items-center justify-center gap-4">
                   <Button

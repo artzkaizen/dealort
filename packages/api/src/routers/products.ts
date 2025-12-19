@@ -5,10 +5,7 @@ import {
   organization,
   organizationImpression,
 } from "@dealort/db/schema/auth";
-import {
-  organizationAsset,
-  organizationReference,
-} from "@dealort/db/schema/org_meta";
+import { organizationReference } from "@dealort/db/schema/org_meta";
 import { comment, review } from "@dealort/db/schema/reviews";
 import { and, count, eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -22,7 +19,7 @@ export const productsRouter = {
     .input(z.object({ slug: z.string() }))
     .handler(async ({ context, input }) => {
       try {
-        const org = await db.query.organization.findFirst({
+        const org = (await db.query.organization.findFirst({
           where: eq(organization.slug, input.slug),
           with: {
             members: {
@@ -31,10 +28,12 @@ export const productsRouter = {
                 user: true,
               },
             },
-            assets: true,
-            references: true,
           },
-        });
+        })) as
+          | (typeof organization.$inferSelect & {
+              members?: Array<{ user?: unknown }>;
+            })
+          | undefined;
 
         if (!org) {
           throw new Error("Product not found");
@@ -99,21 +98,24 @@ export const productsRouter = {
 
         // Get the owner (first member's user)
         const owner =
-          org.members && org.members.length > 0
-            ? (org.members[0]?.user ?? null)
+          (org as { members?: Array<{ user?: unknown }> }).members &&
+          (org as { members: Array<{ user?: unknown }> }).members.length > 0
+            ? ((org as { members: Array<{ user?: unknown }> }).members[0]
+                ?.user ?? null)
             : null;
 
-        // Get references (one record per organization)
-        const ref = org.references?.[0] ?? null;
+        // Get references (one record per organization) from normalized table
+        const ref = await db.query.organizationReference.findFirst({
+          where: eq(organizationReference.organizationId, org.id),
+        });
         const productUrl = ref?.webUrl ?? null;
         const xUrl = ref?.xUrl ?? null;
         const linkedinUrl = ref?.linkedinUrl ?? null;
         const sourceCodeUrl = ref?.sourceCodeUrl ?? null;
 
-        // Get assets (one record per organization)
-        const asset = org.assets?.[0] ?? null;
-        const logo = asset?.logo ?? null;
-        const gallery = (asset?.gallery as string[] | null) ?? [];
+        // Get logo and gallery from organization table
+        const logo = org.logo ?? null;
+        const gallery = (org.gallery as string[] | null) ?? [];
 
         return {
           ...org,
@@ -240,8 +242,9 @@ export const productsRouter = {
     }),
 
   /**
-   * Sync organization links and assets into the normalized tables.
-   * organizationReference and organizationAsset are the canonical storage.
+   * Sync organization links into the normalized tables.
+   * organizationReference is the canonical storage for URLs.
+   * Logo and gallery are stored directly on the organization table.
    */
   syncOrganizationMetadata: protectedProcedure
     .input(
@@ -253,6 +256,8 @@ export const productsRouter = {
         sourceCodeUrl: z.string().url().optional(),
         logo: z.string().url().optional(),
         gallery: z.array(z.string().url()).optional(),
+        // Release date in milliseconds since epoch (optional)
+        releaseDateMs: z.number().optional(),
       })
     )
     .handler(async ({ context, input }) => {
@@ -272,13 +277,9 @@ export const productsRouter = {
         throw new Error("You are not allowed to update this organization");
       }
 
-      // Check if reference/asset records already exist
+      // Check if reference record already exists
       const existingRef = await db.query.organizationReference.findFirst({
         where: eq(organizationReference.organizationId, input.organizationId),
-      });
-
-      const existingAsset = await db.query.organizationAsset.findFirst({
-        where: eq(organizationAsset.organizationId, input.organizationId),
       });
 
       // Apply changes transactionally
@@ -310,28 +311,28 @@ export const productsRouter = {
           });
         }
 
-        // Upsert organization asset
-        if (existingAsset) {
+        // Update logo, gallery and release date directly on organization table
+        const orgUpdate: {
+          logo?: string | null;
+          gallery?: string[] | null;
+          releaseDate?: Date | null;
+        } = {};
+        if (input.logo !== undefined) {
+          orgUpdate.logo = input.logo;
+        }
+        if (input.gallery !== undefined) {
+          orgUpdate.gallery = input.gallery.length > 0 ? input.gallery : null;
+        }
+        if (input.releaseDateMs !== undefined) {
+          orgUpdate.releaseDate =
+            input.releaseDateMs === null ? null : new Date(input.releaseDateMs);
+        }
+
+        if (Object.keys(orgUpdate).length > 0) {
           await tx
-            .update(organizationAsset)
-            .set({
-              logo: input.logo ?? existingAsset.logo,
-              gallery:
-                input.gallery && input.gallery.length > 0
-                  ? (input.gallery as unknown as string[])
-                  : existingAsset.gallery,
-            })
-            .where(eq(organizationAsset.id, existingAsset.id));
-        } else if (input.logo || (input.gallery && input.gallery.length > 0)) {
-          await tx.insert(organizationAsset).values({
-            id: crypto.randomUUID(),
-            organizationId: input.organizationId,
-            logo: input.logo ?? null,
-            gallery:
-              input.gallery && input.gallery.length > 0
-                ? (input.gallery as unknown as string[])
-                : null,
-          });
+            .update(organization)
+            .set(orgUpdate)
+            .where(eq(organization.id, input.organizationId));
         }
       });
 

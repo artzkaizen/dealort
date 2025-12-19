@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarIcon,
+  ChevronDown,
   CloudUploadIcon,
   ExternalLinkIcon,
   XIcon,
@@ -103,8 +104,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { authClient } from "@/lib/auth-client";
 import { useUploadThing } from "@/lib/uploadthing";
 import { cn, slugify } from "@/lib/utils";
-import { CategoriesCombobox } from "@/routes/dashboard/products/new";
+import { categories } from "@/utils/constants";
+import {
+  Combobox,
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxTrigger,
+} from "../ui/dice-combobox";
+import { FieldLabel } from "../ui/field";
 import { Image } from "../ui/image";
+import { TagsInput, TagsInputInput, TagsInputItem } from "../ui/tags-input";
 
 const PROTOCOL_REGEX = /^https?:\/\//i;
 const DOMAIN_EXTENSION_REGEX = /\.[a-zA-Z]{2,}/;
@@ -172,6 +184,7 @@ const getStartedFormBase = z.object({
     ),
   isDev: z.boolean(),
   releaseDate: z.date().optional(),
+  isListed: z.boolean(),
 });
 
 const productInformationFormBase = z
@@ -343,6 +356,7 @@ function createSchemas(mode: "new" | "edit") {
         .optional(),
       isDev: z.boolean().optional(),
       releaseDate: z.date().optional(),
+      isListed: z.boolean().optional(),
     });
 
     const productInformationForm = z
@@ -585,6 +599,7 @@ const formSteps = [
       "getStarted.url",
       "getStarted.isDev",
       "getStarted.releaseDate",
+      "getStarted.isListed",
     ] as const,
   },
   {
@@ -621,6 +636,7 @@ export interface ProductFormData {
     url: string;
     isDev: boolean;
     releaseDate?: Date;
+    isListed: boolean;
   };
   productInformation: {
     name: string;
@@ -654,6 +670,7 @@ interface PreviewProps {
       url?: string;
       isDev?: boolean;
       releaseDate?: Date;
+      isListed?: boolean;
     };
     productInformation: {
       name?: string;
@@ -706,44 +723,50 @@ function ProductPreview({
   return (
     <div className="flex flex-col gap-6 overflow-y-auto p-4">
       {/* Logo and Basic Info */}
-      <div className="flex items-center gap-3 border-b pb-4">
-        <Avatar className="size-16 shrink-0">
-          {isUploadingLogo ? (
-            <Skeleton className="size-full">
-              <CircularProgress
-                className="size-full"
-                value={uploadProgressLogo}
-              >
-                <CircularProgressIndicator>
-                  <CircularProgressTrack />
-                  <CircularProgressRange />
-                </CircularProgressIndicator>
-              </CircularProgress>
-            </Skeleton>
-          ) : (
-            <>
-              <AvatarImage
-                alt={productInfo?.name || "Logo"}
-                src={logoUrl ?? ""}
-              />
-              <AvatarFallback>
-                {(productInfo?.name || "L").charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </>
-          )}
-        </Avatar>
-        <div className="flex flex-col gap-1">
-          <h3 className="font-semibold text-lg">
-            {productInfo?.name || (
-              <span className="text-muted-foreground">Product Name</span>
+      <div className="flex justify-between">
+        <div className="flex items-center gap-3 border-b pb-4">
+          <Avatar className="size-16 shrink-0">
+            {isUploadingLogo ? (
+              <Skeleton className="size-full">
+                <CircularProgress
+                  className="size-full"
+                  value={uploadProgressLogo}
+                >
+                  <CircularProgressIndicator>
+                    <CircularProgressTrack />
+                    <CircularProgressRange />
+                  </CircularProgressIndicator>
+                </CircularProgress>
+              </Skeleton>
+            ) : (
+              <>
+                <AvatarImage
+                  alt={productInfo?.name || "Logo"}
+                  src={logoUrl ?? ""}
+                />
+                <AvatarFallback>
+                  {(productInfo?.name || "L").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </>
             )}
-          </h3>
-          <p className="font-light text-muted-foreground text-sm">
-            {productInfo?.tagline || (
-              <span className="text-muted-foreground">Tagline</span>
-            )}
-          </p>
+          </Avatar>
+          <div className="flex flex-col gap-1">
+            <h3 className="font-semibold text-lg">
+              {productInfo?.name || (
+                <span className="text-muted-foreground">Product Name</span>
+              )}
+            </h3>
+            <p className="font-light text-muted-foreground text-sm">
+              {productInfo?.tagline || (
+                <span className="text-muted-foreground">Tagline</span>
+              )}
+            </p>
+          </div>
         </div>
+
+        <Badge className="size-fit">
+          {values.getStarted.isListed ? "Listed" : "Unlisted"}
+        </Badge>
       </div>
 
       {/* Description */}
@@ -776,11 +799,11 @@ function ProductPreview({
           <h4 className="mb-2 font-semibold text-sm">Website URL</h4>
           <a
             className="inline-flex items-center gap-1 text-primary hover:underline"
-            href={getStarted.url}
+            href={`https://${getStarted.url.toLowerCase()}`}
             rel="noopener noreferrer"
             target="_blank"
           >
-            {getStarted.url}
+            {getStarted.url.toLowerCase()}
             <ExternalLinkIcon className="size-3" />
           </a>
         </div>
@@ -796,7 +819,7 @@ function ProductPreview({
             {productInfo.xUrl && (
               <a
                 className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                href={productInfo.xUrl}
+                href={`https://x.com/${productInfo.xUrl.toLowerCase()}`}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -806,7 +829,7 @@ function ProductPreview({
             {productInfo.linkedinUrl && (
               <a
                 className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                href={productInfo.linkedinUrl}
+                href={`https://www.linkedin.com/company/${productInfo.linkedinUrl.toLowerCase()}`}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -816,7 +839,7 @@ function ProductPreview({
             {productInfo.sourceCodeUrl && (
               <a
                 className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                href={productInfo.sourceCodeUrl}
+                href={`https://${productInfo.sourceCodeUrl.toLowerCase()}`}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -843,6 +866,7 @@ function ProductPreview({
               <span>{format(getStarted.releaseDate, "PPP")}</span>
             </div>
           )}
+
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Open Source:</span>
             <Badge variant={productInfo?.isOpenSource ? "default" : "outline"}>
@@ -955,6 +979,7 @@ export function ProductForm({
           releaseDate: initialValues.getStarted?.releaseDate
             ? new Date(initialValues.getStarted.releaseDate)
             : undefined,
+          isListed: initialValues.getStarted?.isListed ?? false,
         },
         productInformation: {
           name: initialValues.productInformation?.name ?? "",
@@ -993,6 +1018,7 @@ export function ProductForm({
         url: "",
         isDev: false,
         releaseDate: undefined,
+        isListed: false,
       },
       productInformation: {
         name: "",
@@ -1116,6 +1142,7 @@ export function ProductForm({
         url: data.getStarted.url || "",
         isDev: data.getStarted.isDev ?? false,
         releaseDate: data.getStarted.releaseDate,
+        isListed: data.getStarted.isListed ?? false,
       },
       productInformation: {
         name: data.productInformation.name || "",
@@ -1282,6 +1309,41 @@ export function ProductForm({
                       <FormDescription>
                         The date when your product was or will be released.
                       </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="getStarted.isListed"
+                  render={({ field }) => (
+                    <FormItem className="rounded-2xl border px-3 py-6 font-normal hover:bg-accent/50 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-blue-900 dark:has-aria-checked:bg-blue-950">
+                      <div className="flex items-center gap-1">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            className="h-4 w-4"
+                            id={field.name}
+                            name={field.name}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked === true)
+                            }
+                          />
+                        </FormControl>
+
+                        <FormLabel htmlFor={field.name}>
+                          <p className="text-sm">Is This product public?</p>
+                        </FormLabel>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <FieldDescription className="font-light text-xs">
+                          If you check this box, your product will be listed
+                          among products on the products page, it will be
+                          visible to both potential users and investors.
+                        </FieldDescription>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1569,13 +1631,16 @@ export function ProductForm({
                         <FormLabel>Logo</FormLabel>
                         <FileUpload
                           accept=".jpg, .png, .jpeg"
+                          maxFiles={1}
                           onFileReject={(_, message) => {
                             form.setError("media.logo", {
                               message,
+                              type: "custom",
                             });
                           }}
                           onValueChange={(val) => {
-                            field.onChange([val.at(-1)]);
+                            field.onChange(val ?? []);
+                            form.trigger("media.logo");
                           }}
                           value={field.value}
                         >
@@ -1586,25 +1651,23 @@ export function ProductForm({
                               recommended 240x240
                             </div>
                           </FileUploadDropzone>
-                          {field.value &&
-                            field.value.length > 0 &&
-                            field.value?.map((file, index) => (
-                              // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                              <FileUploadItem key={index} value={file}>
-                                <FileUploadItemPreview />
-                                <FileUploadItemMetadata />
-                                <FileUploadItemDelete asChild>
-                                  <Button
-                                    className="size-7"
-                                    size="icon"
-                                    variant="ghost"
-                                  >
-                                    <XIcon />
-                                    <span className="sr-only">Delete</span>
-                                  </Button>
-                                </FileUploadItemDelete>
-                              </FileUploadItem>
-                            ))}
+                          {field.value?.map((file, index) => (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                            <FileUploadItem key={index} value={file}>
+                              <FileUploadItemPreview />
+                              <FileUploadItemMetadata />
+                              <FileUploadItemDelete asChild>
+                                <Button
+                                  className="size-7"
+                                  size="icon"
+                                  variant="ghost"
+                                >
+                                  <XIcon />
+                                  <span className="sr-only">Delete</span>
+                                </Button>
+                              </FileUploadItemDelete>
+                            </FileUploadItem>
+                          ))}
                         </FileUpload>
                         {isUploadingLogo && (
                           <div className="mt-2 space-y-1">
@@ -1719,26 +1782,36 @@ export function ProductForm({
                   Review all your product information before submitting.
                 </p>
               </div>
-            </StepperContent>
 
-            <div>
-              <ResponsivePreview
+              <ProductPreview
                 isUploadingGallery={isUploadingGallery}
                 isUploadingLogo={isUploadingLogo}
-                onOpenChange={setPreviewOpen}
-                open={previewOpen}
                 uploadProgressGallery={uploadProgressGallery}
                 uploadProgressLogo={uploadProgressLogo}
                 values={form.getValues()}
-              >
-                <Button
-                  className="w-full sm:w-auto"
-                  type="button"
-                  variant="outline"
+              />
+            </StepperContent>
+
+            <div>
+              {step !== "confirmation" && (
+                <ResponsivePreview
+                  isUploadingGallery={isUploadingGallery}
+                  isUploadingLogo={isUploadingLogo}
+                  onOpenChange={setPreviewOpen}
+                  open={previewOpen}
+                  uploadProgressGallery={uploadProgressGallery}
+                  uploadProgressLogo={uploadProgressLogo}
+                  values={form.getValues()}
                 >
-                  Open Preview
-                </Button>
-              </ResponsivePreview>
+                  <Button
+                    className="w-full sm:w-auto"
+                    type="button"
+                    variant="outline"
+                  >
+                    Open Preview
+                  </Button>
+                </ResponsivePreview>
+              )}
               <div className="mt-4 flex justify-between">
                 {onCancel ? (
                   <Button onClick={onCancel} type="button" variant="outline">
@@ -1773,5 +1846,68 @@ export function ProductForm({
         </Stepper>
       </form>
     </Form>
+  );
+}
+
+interface ComboboxFieldProps {
+  name: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+  onBlur: () => void;
+  className?: string;
+}
+
+export function CategoriesCombobox({
+  name,
+  value = [],
+  onChange,
+  onBlur,
+  className,
+}: ComboboxFieldProps) {
+  return (
+    <Combobox autoHighlight multiple onValueChange={onChange} value={value}>
+      <FieldLabel className="pt-0 font-medium text-xs sm:text-sm">
+        Categories
+      </FieldLabel>
+      <ComboboxAnchor asChild>
+        <TagsInput
+          className={`relative flex h-full min-h-10 w-full flex-row flex-wrap items-center justify-start gap-1.5 px-2.5 py-2 ${className}`}
+          name={name}
+          onBlur={onBlur}
+          onValueChange={onChange}
+          value={value}
+        >
+          {value.map((item) => (
+            <TagsInputItem
+              className="text-xs capitalize"
+              key={item}
+              value={item}
+            >
+              {item}
+            </TagsInputItem>
+          ))}
+          <ComboboxInput asChild className="h-fit flex-1 p-0">
+            <TagsInputInput className="text-xs" placeholder="Categories..." />
+          </ComboboxInput>
+          <ComboboxTrigger className="absolute top-2.5 right-2">
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </ComboboxTrigger>
+        </TagsInput>
+      </ComboboxAnchor>
+
+      <ComboboxContent className="max-h-52 overflow-y-auto" sideOffset={5}>
+        <ComboboxEmpty>No category found.</ComboboxEmpty>
+        {categories.map((category) => (
+          <ComboboxItem
+            className="text-xs capitalize"
+            key={category}
+            outset
+            value={category}
+          >
+            {category}
+          </ComboboxItem>
+        ))}
+      </ComboboxContent>
+    </Combobox>
   );
 }

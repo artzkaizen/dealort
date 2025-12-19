@@ -42,7 +42,7 @@ export function TextField({
         <div className="flex items-center gap-px">
           <FormLabel className="text-foreground text-xs capitalize sm:text-sm">
             {label}
-            {required ? <span className="text-destructive">*</span> : null}
+            {/* {required ? <span className="text-destructive">*</span> : null} */}
           </FormLabel>
 
           {infoTooltip && (

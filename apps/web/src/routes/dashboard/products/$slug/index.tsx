@@ -58,6 +58,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { client } from "@/utils/orpc";
 
 const MEMBER_LIMIT = 15;
 
@@ -74,9 +75,9 @@ export const Route = createFileRoute("/dashboard/products/$slug/")({
         organizationSlug: params.slug,
       },
     });
-    // Get full product data with references and assets
-    const productData = await orpc.products.getBySlug.query({
-      input: { slug: params.slug },
+    // Get full product data with references (use raw ORPC client, not tanstack utils)
+    const productData = await client.products.getBySlug({
+      slug: params.slug,
     });
     const { data: session } = await authClient.getSession();
     return { organization, productData, session };
@@ -101,7 +102,7 @@ function RouteComponent() {
     (member) => member.userId === userId && member.role === "owner"
   );
 
-  // Use productData for URLs and assets (from normalized tables)
+  // Use productData for URLs (logo and gallery come from organization table)
   const gallery = (productData?.gallery as string[]) || [];
   const logo = productData?.logo ?? org.logo ?? "";
   const url = productData?.url ?? "";

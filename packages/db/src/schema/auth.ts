@@ -1,6 +1,5 @@
 import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { organizationAsset, organizationReference } from "./org_meta";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -139,6 +138,7 @@ export const organization = sqliteTable("organization", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  logo: text("logo"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   metadata: text("metadata"),
   isDev: integer("is_dev", { mode: "boolean" }).notNull(),
@@ -149,6 +149,8 @@ export const organization = sqliteTable("organization", {
   rating: integer("rating").notNull(),
   impressions: integer("impressions").notNull(),
   releaseDate: integer("release_date", { mode: "timestamp_ms" }),
+  isListed: integer("is_listed", { mode: "boolean" }).notNull(),
+  gallery: text("gallery", { mode: "json" }),
 });
 
 export const member = sqliteTable(
@@ -202,8 +204,8 @@ export const rateLimit = sqliteTable("rate_limit", {
 });
 
 /**
- * Organization impressions - tracks when users view/like an organization
- * Used to track impressions count for organizations
+ * Organization impressions - tracks when users view/like an organization.
+ * Used for analytics such as likes and views.
  */
 export const organizationImpression = sqliteTable(
   "organization_impression",
@@ -228,7 +230,7 @@ export const organizationImpression = sqliteTable(
 );
 
 /**
- * Follow table - tracks user follows for organizations/products
+ * Follow table - tracks user follows for organizations/products.
  */
 export const follow = sqliteTable(
   "follow",
@@ -264,7 +266,6 @@ export const userRelations = relations(user, ({ many }) => ({
   invitations: many(invitation),
   organizationImpressions: many(organizationImpression),
   follows: many(follow),
-  // Reviews and comments relations are defined in reviews.ts
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -300,9 +301,6 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   invitations: many(invitation),
   impressions: many(organizationImpression),
   follows: many(follow),
-  references: many(organizationReference),
-  assets: many(organizationAsset),
-  // Reviews and comments relations are defined in reviews.ts
 }));
 
 export const organizationImpressionRelations = relations(

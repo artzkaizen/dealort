@@ -47,10 +47,11 @@ function ReviewsPage() {
   const isAuthenticated = !!session;
   const currentUserId = session?.user?.id;
 
-  // Fetch product data
-  const { data: product } = useQuery(
-    orpc.products.getBySlug.queryOptions({ input: { slug } })
-  );
+  // Fetch product data (use raw ORPC client instead of query utils here)
+  const { data: product } = useQuery({
+    queryKey: ["products", "getBySlug", slug],
+    queryFn: () => client.products.getBySlug({ slug }),
+  });
 
   // Filter and sort state
   const [filter, setFilter] = useState<"all" | "my">("all");
