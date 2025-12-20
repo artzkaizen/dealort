@@ -95,6 +95,9 @@ function RouteComponent() {
   }
 
   const org = organization.data;
+  const filteredInvitations = org.invitations.filter(
+    (invitation) => invitation.status !== "canceled"
+  );
   const userId = currentSession?.user?.id || session?.user?.id;
 
   // Check if current user is owner
@@ -112,7 +115,7 @@ function RouteComponent() {
   const memberCount = org.members?.length ?? 0;
   const remainingSlots = MEMBER_LIMIT - memberCount;
 
-  async function handleResendInvitation(invitationId: string, email: string) {
+  async function handleResendInvitation(email: string) {
     return await authClient.organization.inviteMember(
       {
         email,
@@ -149,6 +152,24 @@ function RouteComponent() {
     );
   }
 
+  async function handleRemoveMember(memberId: string) {
+    return await authClient.organization.removeMember(
+      {
+        memberIdOrEmail: memberId,
+        organizationId: org.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Member removed successfully");
+          router.invalidate();
+        },
+        onError: (error) => {
+          toast.error(error.error.message || "Failed to remove member");
+        },
+      }
+    );
+  }
+
   async function handleDeleteOrganization() {
     const result = await authClient.organization.delete({
       organizationId: org.id,
@@ -157,6 +178,23 @@ function RouteComponent() {
       router.navigate({ to: "/dashboard/products" });
     }
     return result;
+  }
+
+  async function handleLeaveOrganization() {
+    return await authClient.organization.leave(
+      {
+        organizationId: org.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("You have left the organization");
+          router.navigate({ to: "/dashboard/products" });
+        },
+        onError: (error) => {
+          toast.error(error.error.message || "Failed to leave organization");
+        },
+      }
+    );
   }
 
   return (
@@ -179,20 +217,32 @@ function RouteComponent() {
 
         <TabsContent className="space-y-6" value="details">
           {/* Header Section - Chrome Web Store style */}
-          <div className="flex flex-col gap-6 rounded-lg border bg-card p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-              <Avatar className="size-20 shrink-0">
+          <div className="flex flex-col gap-6 rounded-lg border bg-card p-6">
+            <div className="flex flex-wrap items-start gap-4">
+              <Avatar className="size-16 shrink-0 sm:size-20">
                 <AvatarImage alt={org.name} src={logo} />
-                <AvatarFallback className="text-lg">
+                <AvatarFallback className="text-base sm:text-lg">
                   {org.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-1 flex-col gap-2">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex flex-col gap-1">
-                    <h1 className="font-semibold text-2xl capitalize leading-tight">
-                      {org.name}
-                    </h1>
+                    <div className="flex flex-row items-center gap-2">
+                      <h1 className="font-semibold text-2xl capitalize leading-tight">
+                        {org.name}
+                      </h1>
+
+                      <Badge
+                        className="size-fit text-[10px]"
+                        variant={
+                          organization.isListed ? "default" : "secondary"
+                        }
+                      >
+                        {organization.isListed ? "Listed" : "Not Listed"}
+                      </Badge>
+                    </div>
+
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       {org.tagline}
                     </p>
@@ -399,9 +449,10 @@ function RouteComponent() {
         </TabsContent>
 
         <TabsContent className="space-y-4" value="members">
-          <div className="rounded-lg border bg-card p-6 shadow-sm">
+          <div className="rounded-lg border bg-card p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-semibold text-xl">Members</h2>
+
               <p className="text-muted-foreground text-sm">
                 <SlotCountBadge remainingSlots={remainingSlots} />
               </p>
@@ -426,9 +477,41 @@ function RouteComponent() {
                         </p>
                       </div>
                     </div>
-                    <span className="rounded bg-muted px-2 py-1 font-medium text-xs capitalize">
+                    <Badge
+                      className="size-fit text-xs capitalize"
+                      variant={
+                        member.role === "owner" ? "default" : "secondary"
+                      }
+                    >
                       {member.role}
-                    </span>
+                    </Badge>
+
+                    {!isOwner && session?.user?.id === member.userId && (
+                      <BetterAuthActionButton
+                        action={handleLeaveOrganization}
+                        areYouSureDescription="Are you sure you want to leave this product? This action cannot be undone."
+                        requireAreYouSure
+                        size="sm"
+                        variant="destructive"
+                      >
+                        <Trash2 className="size-4" />
+                        Leave
+                      </BetterAuthActionButton>
+                    )}
+
+                    {isOwner && session?.user?.id !== member.userId && (
+                      <BetterAuthActionButton
+                        action={() => handleRemoveMember(member.id)}
+                        areYouSureDescription="Are you sure you want to remove this member from this product? This action cannot be undone."
+                        className="text-[10px] sm:text-xs"
+                        requireAreYouSure
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Trash2 className="size-4" />
+                        Boot out
+                      </BetterAuthActionButton>
+                    )}
                   </div>
                 ))}
               </div>
@@ -439,7 +522,7 @@ function RouteComponent() {
         </TabsContent>
 
         <TabsContent className="space-y-4" value="invitations">
-          <div className="rounded-lg border bg-card p-6 shadow-sm">
+          <div className="rounded-lg border bg-card p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between">
               <h2 className="font-semibold text-lg md:text-xl">Invitations</h2>
               <div className="flex items-center gap-4">
@@ -451,9 +534,9 @@ function RouteComponent() {
                 )}
               </div>
             </div>
-            {org.invitations && org.invitations.length > 0 ? (
+            {filteredInvitations && filteredInvitations.length > 0 ? (
               <div className="space-y-2">
-                {org.invitations.map((invitation) => (
+                {filteredInvitations.map((invitation) => (
                   <div
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
                     key={invitation.id}
@@ -486,32 +569,31 @@ function RouteComponent() {
                       </span>
                     </div>
 
-                    <Popover>
-                      <PopoverTrigger>
-                        <EllipsisIcon />
-                      </PopoverTrigger>
-                      <PopoverContent className="flex size-fit flex-col overflow-hidden p-0">
-                        <BetterAuthActionButton
-                          action={() =>
-                            handleResendInvitation(
-                              invitation.id,
-                              invitation.email
-                            )
-                          }
-                          className="text-xs"
-                          variant="secondary"
-                        >
-                          <MailPlusIcon /> Resend Invitation
-                        </BetterAuthActionButton>
-                        <BetterAuthActionButton
-                          action={() => handleRevokeInvitation(invitation.id)}
-                          className="text-xs"
-                          variant="destructive"
-                        >
-                          <Trash2 /> Revoke Invitation
-                        </BetterAuthActionButton>
-                      </PopoverContent>
-                    </Popover>
+                    {isOwner && (
+                      <Popover>
+                        <PopoverTrigger>
+                          <EllipsisIcon />
+                        </PopoverTrigger>
+                        <PopoverContent className="flex size-fit flex-col overflow-hidden p-0">
+                          <BetterAuthActionButton
+                            action={() =>
+                              handleResendInvitation(invitation.email)
+                            }
+                            className="text-xs"
+                            variant="secondary"
+                          >
+                            <MailPlusIcon /> Resend Invitation
+                          </BetterAuthActionButton>
+                          <BetterAuthActionButton
+                            action={() => handleRevokeInvitation(invitation.id)}
+                            className="text-xs"
+                            variant="destructive"
+                          >
+                            <Trash2 /> Revoke Invitation
+                          </BetterAuthActionButton>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                 ))}
               </div>
@@ -539,6 +621,12 @@ function InviteMemberDialog({ organizationId }: { organizationId: string }) {
   });
 
   async function onSubmit(data: InvitationFormData) {
+    const result = await authClient.organization.listInvitations();
+    if (result.error) {
+      toast.error(result.error.message || "Failed to get invitations");
+      return;
+    }
+
     await authClient.organization.inviteMember(
       {
         email: data.email,
@@ -626,7 +714,7 @@ function SlotCountBadge({ remainingSlots }: { remainingSlots: number }) {
               remainingSlots <= 0,
           })}
         >
-          ({remainingSlots})
+          ({remainingSlots})/15 slots remaining
         </Badge>
       </TooltipTrigger>
       <TooltipContent className="max-w-36">

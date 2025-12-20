@@ -15,6 +15,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AcceptInvitationTokenRouteImport } from './routes/accept-invitation/$token'
 import { Route as PublicLaunchesRouteImport } from './routes/_public/launches'
 import { Route as DashboardSettingsLayoutRouteImport } from './routes/dashboard/settings/layout'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
@@ -31,7 +32,6 @@ import { Route as DashboardProductsSlugIndexRouteImport } from './routes/dashboa
 import { Route as PublicProductsSlugIndexRouteImport } from './routes/_public/products/$slug/index'
 import { Route as DashboardProductsSlugEditRouteImport } from './routes/dashboard/products/$slug/edit'
 import { Route as PublicProductsSlugReviewsRouteImport } from './routes/_public/products/$slug/reviews'
-import { Route as DashboardTestTestATestBTestCTestRouteImport } from './routes/dashboard/test/test-a/test-b/test-c/test'
 
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
   id: '/dashboard',
@@ -60,6 +60,11 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcceptInvitationTokenRoute = AcceptInvitationTokenRouteImport.update({
+  id: '/accept-invitation/$token',
+  path: '/accept-invitation/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicLaunchesRoute = PublicLaunchesRouteImport.update({
@@ -150,17 +155,12 @@ const PublicProductsSlugReviewsRoute =
     path: '/products/$slug/reviews',
     getParentRoute: () => PublicLayoutRoute,
   } as any)
-const DashboardTestTestATestBTestCTestRoute =
-  DashboardTestTestATestBTestCTestRouteImport.update({
-    id: '/test/test-a/test-b/test-c/test',
-    path: '/test/test-a/test-b/test-c/test',
-    getParentRoute: () => DashboardLayoutRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsLayoutRouteWithChildren
   '/launches': typeof PublicLaunchesRoute
+  '/accept-invitation/$token': typeof AcceptInvitationTokenRoute
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/': typeof PublicIndexRoute
@@ -179,10 +179,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
   '/products/$slug': typeof PublicProductsSlugIndexRoute
   '/dashboard/products/$slug': typeof DashboardProductsSlugIndexRoute
-  '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
 export interface FileRoutesByTo {
   '/launches': typeof PublicLaunchesRoute
+  '/accept-invitation/$token': typeof AcceptInvitationTokenRoute
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/': typeof PublicIndexRoute
@@ -201,7 +201,6 @@ export interface FileRoutesByTo {
   '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
   '/products/$slug': typeof PublicProductsSlugIndexRoute
   '/dashboard/products/$slug': typeof DashboardProductsSlugIndexRoute
-  '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -209,6 +208,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsLayoutRouteWithChildren
   '/_public/launches': typeof PublicLaunchesRoute
+  '/accept-invitation/$token': typeof AcceptInvitationTokenRoute
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/_public/': typeof PublicIndexRoute
@@ -227,7 +227,6 @@ export interface FileRoutesById {
   '/dashboard/products/$slug/edit': typeof DashboardProductsSlugEditRoute
   '/_public/products/$slug/': typeof PublicProductsSlugIndexRoute
   '/dashboard/products/$slug/': typeof DashboardProductsSlugIndexRoute
-  '/dashboard/test/test-a/test-b/test-c/test': typeof DashboardTestTestATestBTestCTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -235,6 +234,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/settings'
     | '/launches'
+    | '/accept-invitation/$token'
     | '/auth/login'
     | '/dashboard/analytics'
     | '/'
@@ -253,10 +253,10 @@ export interface FileRouteTypes {
     | '/dashboard/products/$slug/edit'
     | '/products/$slug'
     | '/dashboard/products/$slug'
-    | '/dashboard/test/test-a/test-b/test-c/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/launches'
+    | '/accept-invitation/$token'
     | '/auth/login'
     | '/dashboard/analytics'
     | '/'
@@ -275,13 +275,13 @@ export interface FileRouteTypes {
     | '/dashboard/products/$slug/edit'
     | '/products/$slug'
     | '/dashboard/products/$slug'
-    | '/dashboard/test/test-a/test-b/test-c/test'
   id:
     | '__root__'
     | '/_public'
     | '/dashboard'
     | '/dashboard/settings'
     | '/_public/launches'
+    | '/accept-invitation/$token'
     | '/auth/login'
     | '/dashboard/analytics'
     | '/_public/'
@@ -300,12 +300,12 @@ export interface FileRouteTypes {
     | '/dashboard/products/$slug/edit'
     | '/_public/products/$slug/'
     | '/dashboard/products/$slug/'
-    | '/dashboard/test/test-a/test-b/test-c/test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
+  AcceptInvitationTokenRoute: typeof AcceptInvitationTokenRoute
   AuthLoginRoute: typeof AuthLoginRoute
 }
 
@@ -351,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accept-invitation/$token': {
+      id: '/accept-invitation/$token'
+      path: '/accept-invitation/$token'
+      fullPath: '/accept-invitation/$token'
+      preLoaderRoute: typeof AcceptInvitationTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/launches': {
@@ -465,13 +472,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicProductsSlugReviewsRouteImport
       parentRoute: typeof PublicLayoutRoute
     }
-    '/dashboard/test/test-a/test-b/test-c/test': {
-      id: '/dashboard/test/test-a/test-b/test-c/test'
-      path: '/test/test-a/test-b/test-c/test'
-      fullPath: '/dashboard/test/test-a/test-b/test-c/test'
-      preLoaderRoute: typeof DashboardTestTestATestBTestCTestRouteImport
-      parentRoute: typeof DashboardLayoutRoute
-    }
   }
 }
 
@@ -529,7 +529,6 @@ interface DashboardLayoutRouteChildren {
   DashboardProductsIndexRoute: typeof DashboardProductsIndexRoute
   DashboardProductsSlugEditRoute: typeof DashboardProductsSlugEditRoute
   DashboardProductsSlugIndexRoute: typeof DashboardProductsSlugIndexRoute
-  DashboardTestTestATestBTestCTestRoute: typeof DashboardTestTestATestBTestCTestRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
@@ -540,7 +539,6 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardProductsIndexRoute: DashboardProductsIndexRoute,
   DashboardProductsSlugEditRoute: DashboardProductsSlugEditRoute,
   DashboardProductsSlugIndexRoute: DashboardProductsSlugIndexRoute,
-  DashboardTestTestATestBTestCTestRoute: DashboardTestTestATestBTestCTestRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
@@ -550,6 +548,7 @@ const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   PublicLayoutRoute: PublicLayoutRouteWithChildren,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
+  AcceptInvitationTokenRoute: AcceptInvitationTokenRoute,
   AuthLoginRoute: AuthLoginRoute,
 }
 export const routeTree = rootRouteImport

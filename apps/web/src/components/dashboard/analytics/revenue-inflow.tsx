@@ -118,10 +118,13 @@ export function RevenueInflow() {
   }, [duration]);
 
   return (
-    <Card className="pt-0 relative overflow-hidden">
-      <div className="z-7 text-center absolute top-0 right-0 w-full h-full bg-background/50 backdrop-blur-sm border-b border-border flex flex-col gap-2 justify-center items-center">
-        <h2 className="text-2xl font-bold font-clash-display">Coming Soon!</h2>
-        <p className="text-sm text-muted-foreground"> We are working on it and will be available soon.</p>
+    <Card className="relative overflow-hidden pt-0">
+      <div className="absolute top-0 right-0 z-7 flex h-full w-full flex-col items-center justify-center gap-2 border-border border-b bg-background/50 text-center backdrop-blur-sm">
+        <h2 className="font-bold font-clash-display text-2xl">Coming Soon!</h2>
+        <p className="text-muted-foreground text-sm">
+          {" "}
+          We are working on it and will be available soon.
+        </p>
       </div>
 
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">

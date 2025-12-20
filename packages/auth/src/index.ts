@@ -153,7 +153,9 @@ const authConfig: BetterAuthOptions = {
       allowUserToCreateOrganization: true,
       memberLimit: 15,
       async sendInvitationEmail(data) {
-        const inviteLink = `${env.BETTER_AUTH_URL}/accept-invitation/${data.id}`;
+        // Use CORS_ORIGIN (client URL) instead of BETTER_AUTH_URL (server URL)
+        // because the accept-invitation route is on the client, not the server
+        const inviteLink = `${env.CORS_ORIGIN}/accept-invitation/${data.id}`;
         const res = await sendInvitationEmail({
           to: data.email,
           invitationUrl: inviteLink,

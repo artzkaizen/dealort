@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
 import { BetterAuthActionButton } from "@/components/better-auth-action-button";
 import {
@@ -15,11 +15,24 @@ export const Route = createFileRoute("/dashboard/settings/danger")({
 });
 
 function RouteComponent() {
+  const router = useRouter();
   async function handleDeleteAccount() {
     return await authClient.deleteUser({
       callbackURL: `${window.location.origin}/`,
     });
   }
+
+  async function handleLogout() {
+    return await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.invalidate();
+          router.navigate({ to: "/auth/login" });
+        },
+      },
+    });
+  }
+
   return (
     <div>
       <section className="space-y-4 p-2">
@@ -31,6 +44,29 @@ function RouteComponent() {
             Irreversible actions that cannot be undone.
           </p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Logout</CardTitle>
+            <CardDescription className="flex flex-col gap-px text-muted-foreground text-xs">
+              <p>
+                This action will logout you from your account and all associated
+                devices. This action is irreversible so make sure you want to do
+                this.
+              </p>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BetterAuthActionButton
+              action={() => handleLogout()}
+              areYouSureDescription="Are you sure you want to logout from your account?"
+              requireAreYouSure
+              variant={"destructive"}
+            >
+              Logout
+            </BetterAuthActionButton>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

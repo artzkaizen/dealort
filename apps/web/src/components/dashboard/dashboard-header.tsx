@@ -2,7 +2,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
-import { ModeToggle } from "../mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { DashboardBreadcrumbs } from "./dashboard-breadcrumbs";
 
@@ -43,8 +42,6 @@ export function DashboardHeader() {
       </div>
 
       <div className="flex items-center gap-2">
-        <ModeToggle />
-
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild className="rounded-xl" variant="default">

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { OverviewAnalytics } from "@/components/dashboard/analytics/overview-analytics";
 import { RevenueInflow } from "@/components/dashboard/analytics/revenue-inflow";
-import { RevenueTable } from "@/components/dashboard/revenue-table";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,7 +88,7 @@ function RouteComponent() {
   // }
 
   return (
-    <main className="px-2 py-5 max-w-screen">
+    <main className="max-w-screen px-2 py-5">
       <section className="flex flex-col gap-1">
         <h1 className="font-bold text-2xl sm:text-4xl">
           Hi, {user?.name.split(" ")[0]}
@@ -145,7 +144,7 @@ function RouteComponent() {
 
       {/* <hr className="my-10 py-px" /> */}
 
-      <section className="mt-5 rounded-lg bg-popover overflow-x-auto bg-red-500">
+      <section className="mt-5 overflow-x-auto rounded-lg bg-popover bg-red-500">
         {/* <RevenueTable /> */}
       </section>
     </main>

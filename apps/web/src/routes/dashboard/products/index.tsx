@@ -8,6 +8,7 @@ import {
   EyeIcon,
   ListIcon,
   PlusIcon,
+  RocketIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -90,9 +91,20 @@ function RouteComponent() {
                     </Avatar>
 
                     <div className="flex flex-col gap-1">
-                      <h2 className="font-semibold text-sm">
-                        {organization.name}
-                      </h2>
+                      <div className="flex flex-row gap-2">
+                        <h2 className="font-semibold text-sm">
+                          {organization.name}
+                        </h2>
+
+                        <Badge
+                          className="size-fit text-[10px]"
+                          variant={
+                            organization.isListed ? "default" : "secondary"
+                          }
+                        >
+                          {organization.isListed ? "Listed" : "Not Listed"}
+                        </Badge>
+                      </div>
                       <p className="text-muted-foreground text-xs">
                         {"tagline" in organization
                           ? (organization as { tagline?: string }).tagline
@@ -115,11 +127,25 @@ function RouteComponent() {
                       )}
                   </CardContent>
 
-                  <CardFooter className="flex flex-wrap justify-between gap-2 border-t px-2 pt-0 pb-2">
-                    <p className="flex items-center gap-1 text-muted-foreground text-xs">
-                      <CalendarIcon className="size-4" />
-                      {format(new Date(organization.createdAt), "MMM d, yyyy")}
-                    </p>
+                  <CardFooter className="flex flex-wrap items-end justify-between gap-2 border-t px-2 pt-0 pb-2">
+                    <div className="item-start flex flex-col gap-1">
+                      {organization.releaseDate && (
+                        <p className="flex items-center gap-1 text-muted-foreground text-xs">
+                          <RocketIcon className="size-4" />
+                          {format(
+                            new Date(organization.releaseDate),
+                            "MMM d, yyyy"
+                          )}
+                        </p>
+                      )}
+                      <p className="flex items-center gap-1 text-muted-foreground text-xs">
+                        <CalendarIcon className="size-4" />
+                        {format(
+                          new Date(organization.createdAt),
+                          "MMM d, yyyy"
+                        )}
+                      </p>
+                    </div>
 
                     <div className="flex gap-1">
                       <Popover>
@@ -128,19 +154,21 @@ function RouteComponent() {
                         </PopoverTrigger>
 
                         <PopoverContent className="flex size-fit flex-col overflow-hidden p-0 *:rounded-none *:text-xs">
-                          <Button
-                            aria-label="View Product Public Page"
-                            asChild
-                            variant="secondary"
-                          >
-                            <a
-                              href={`/products/${organization.slug}`}
-                              rel="noopener noreferrer"
-                              target="_blank"
+                          {organization.isListed && (
+                            <Button
+                              aria-label="View Product Public Page"
+                              asChild
+                              variant="secondary"
                             >
-                              <EyeIcon className="size-4" /> View Public Page
-                            </a>
-                          </Button>
+                              <a
+                                href={`/products/${organization.slug}`}
+                                rel="noopener noreferrer"
+                                target="_blank"
+                              >
+                                <EyeIcon className="size-4" /> View Public Page
+                              </a>
+                            </Button>
+                          )}
 
                           <Button
                             aria-label="Full details"

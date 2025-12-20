@@ -28,12 +28,15 @@ export function DataTable<TData>({
 }: DataTableProps<TData>) {
   return (
     <div
-      className={cn("flex max-w-full flex-col gap-2.5 overflow-hidden", className)}
+      className={cn(
+        "flex max-w-full flex-col gap-2.5 overflow-hidden",
+        className
+      )}
       {...props}
     >
       {children}
       <div className="overflow-hidden rounded-md border">
-        <ScrollArea className="contents" >
+        <ScrollArea className="contents">
           <Table className="max-w-full overflow-hidden">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -91,7 +94,7 @@ export function DataTable<TData>({
               )}
             </TableBody>
           </Table>
-                <ScrollBar orientation="horizontal" />
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
       <div className="flex flex-col gap-2.5">
