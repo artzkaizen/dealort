@@ -73,14 +73,10 @@ function RouteComponent() {
       //   ).getTime();
       // }
 
-      console.log("Creating organization with payload:", createPayload);
-
       const result = await authClient.organization.create(
         createPayload as Parameters<typeof authClient.organization.create>[0],
         {
           onError: (error) => {
-            console.error("Organization create error:", error);
-            console.error("Error details:", JSON.stringify(error, null, 2));
             toast.error(
               error.error?.message ||
                 error.error?.statusText ||
@@ -108,7 +104,6 @@ function RouteComponent() {
         });
       }
     } catch (error) {
-      console.error("Error creating product:", error);
       toast.error("Failed to create product");
     }
   }

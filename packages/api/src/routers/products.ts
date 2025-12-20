@@ -7,9 +7,143 @@ import {
 } from "@dealort/db/schema/auth";
 import { organizationReference } from "@dealort/db/schema/org_meta";
 import { comment, review } from "@dealort/db/schema/reviews";
+import { apiLogger } from "@dealort/utils/logger";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../index";
+
+// Helper function to fetch organization stats
+async function fetchOrganizationStats(organizationId: string) {
+  const [reviewStats, commentCount, followerCount, likeCount] =
+    await Promise.all([
+      db
+        .select({
+          count: count(),
+          avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
+        })
+        .from(review)
+        .where(eq(review.organizationId, organizationId)),
+      db
+        .select({ count: count() })
+        .from(comment)
+        .where(eq(comment.organizationId, organizationId)),
+      db
+        .select({ count: count() })
+        .from(follow)
+        .where(eq(follow.organizationId, organizationId)),
+      db
+        .select({ count: count() })
+        .from(organizationImpression)
+        .where(
+          and(
+            eq(organizationImpression.organizationId, organizationId),
+            eq(organizationImpression.type, "like")
+          )
+        ),
+    ]);
+
+  return {
+    reviewCount: reviewStats[0]?.count ?? 0,
+    avgRating: reviewStats[0]?.avgRating ?? 0,
+    commentCount: commentCount[0]?.count ?? 0,
+    followerCount: followerCount[0]?.count ?? 0,
+    likeCount: likeCount[0]?.count ?? 0,
+  };
+}
+
+// Helper function to check user interaction state
+async function checkUserInteractionState(
+  organizationId: string,
+  userId?: string
+) {
+  if (!userId) {
+    return { isFollowing: false, hasLiked: false };
+  }
+
+  const [followRecord, likeRecord] = await Promise.all([
+    db.query.follow.findFirst({
+      where: and(
+        eq(follow.organizationId, organizationId),
+        eq(follow.userId, userId)
+      ),
+    }),
+    db.query.organizationImpression.findFirst({
+      where: and(
+        eq(organizationImpression.organizationId, organizationId),
+        eq(organizationImpression.userId, userId),
+        eq(organizationImpression.type, "like")
+      ),
+    }),
+  ]);
+
+  return {
+    isFollowing: !!followRecord,
+    hasLiked: !!likeRecord,
+  };
+}
+
+// Helper function to upsert organization reference
+async function upsertOrganizationReference(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  options: {
+    organizationId: string;
+    existingRef: typeof organizationReference.$inferSelect | null | undefined;
+    url?: string;
+    xUrl?: string;
+    linkedinUrl?: string;
+    sourceCodeUrl?: string;
+  }
+) {
+  const { organizationId, existingRef, url, xUrl, linkedinUrl, sourceCodeUrl } =
+    options;
+
+  if (existingRef) {
+    await tx
+      .update(organizationReference)
+      .set({
+        webUrl: url ?? existingRef.webUrl,
+        xUrl: xUrl ?? existingRef.xUrl,
+        linkedinUrl: linkedinUrl ?? existingRef.linkedinUrl,
+        sourceCodeUrl: sourceCodeUrl ?? existingRef.sourceCodeUrl,
+      })
+      .where(eq(organizationReference.id, existingRef.id));
+  } else if (url || xUrl || linkedinUrl || sourceCodeUrl) {
+    await tx.insert(organizationReference).values({
+      id: crypto.randomUUID(),
+      organizationId,
+      webUrl: url ?? "",
+      xUrl: xUrl ?? "",
+      linkedinUrl: linkedinUrl ?? null,
+      sourceCodeUrl: sourceCodeUrl ?? null,
+    });
+  }
+}
+
+// Helper function to build organization update object
+function buildOrganizationUpdate(input: {
+  logo?: string | null;
+  gallery?: string[] | undefined;
+  releaseDateMs?: number | null;
+}) {
+  const orgUpdate: {
+    logo?: string | null;
+    gallery?: string[] | null;
+    releaseDate?: Date | null;
+  } = {};
+
+  if (input.logo !== undefined) {
+    orgUpdate.logo = input.logo;
+  }
+  if (input.gallery !== undefined) {
+    orgUpdate.gallery = input.gallery.length > 0 ? input.gallery : null;
+  }
+  if (input.releaseDateMs !== undefined) {
+    orgUpdate.releaseDate =
+      input.releaseDateMs === null ? null : new Date(input.releaseDateMs);
+  }
+
+  return orgUpdate;
+}
 
 // Helper function to enrich organization with stats
 async function enrichOrganizationWithStats(
@@ -63,7 +197,7 @@ async function enrichOrganizationWithStats(
   };
 }
 
-export const productsRouter = {
+export const productsRouter: Record<string, unknown> = {
   /**
    * Get product/organization by slug
    */
@@ -91,62 +225,11 @@ export const productsRouter = {
           throw new Error("Product not found");
         }
 
-        // Get review stats
-        const reviewStats = await db
-          .select({
-            count: count(),
-            avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
-          })
-          .from(review)
-          .where(eq(review.organizationId, org.id));
-
-        // Get comment count
-        const commentCount = await db
-          .select({ count: count() })
-          .from(comment)
-          .where(eq(comment.organizationId, org.id));
-
-        // Get follower count
-        const followerCount = await db
-          .select({ count: count() })
-          .from(follow)
-          .where(eq(follow.organizationId, org.id));
-
-        // Get like count
-        const likeCount = await db
-          .select({ count: count() })
-          .from(organizationImpression)
-          .where(
-            and(
-              eq(organizationImpression.organizationId, org.id),
-              eq(organizationImpression.type, "like")
-            )
-          );
-
-        // Check if user is following (if authenticated)
-        let isFollowing = false;
-        if (context.session?.user) {
-          const followRecord = await db.query.follow.findFirst({
-            where: and(
-              eq(follow.organizationId, org.id),
-              eq(follow.userId, context.session.user.id)
-            ),
-          });
-          isFollowing = !!followRecord;
-        }
-
-        // Check if user has liked (if authenticated)
-        let hasLiked = false;
-        if (context.session?.user) {
-          const likeRecord = await db.query.organizationImpression.findFirst({
-            where: and(
-              eq(organizationImpression.organizationId, org.id),
-              eq(organizationImpression.userId, context.session.user.id),
-              eq(organizationImpression.type, "like")
-            ),
-          });
-          hasLiked = !!likeRecord;
-        }
+        // Fetch stats and user interaction state in parallel
+        const [stats, userState] = await Promise.all([
+          fetchOrganizationStats(org.id),
+          checkUserInteractionState(org.id, context.session?.user?.id),
+        ]);
 
         // Get the owner (first member's user)
         const owner =
@@ -177,26 +260,26 @@ export const productsRouter = {
           xURL: xUrl,
           linkedinURL: linkedinUrl,
           sourceCodeURL: sourceCodeUrl,
-          reviewCount: reviewStats[0]?.count ?? 0,
-          averageRating: Number(reviewStats[0]?.avgRating ?? 0),
-          commentCount: commentCount[0]?.count ?? 0,
-          followerCount: followerCount[0]?.count ?? 0,
-          likeCount: likeCount[0]?.count ?? 0,
-          isFollowing,
-          hasLiked,
+          reviewCount: stats.reviewCount,
+          averageRating: Number(stats.avgRating),
+          commentCount: stats.commentCount,
+          followerCount: stats.followerCount,
+          likeCount: stats.likeCount,
+          isFollowing: userState.isFollowing,
+          hasLiked: userState.hasLiked,
           owner,
         };
       } catch (error) {
-        console.error("Error in getBySlug:", error);
-        console.error(
-          "Error details:",
-          error instanceof Error ? error.message : String(error)
+        apiLogger.error(
+          {
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+            input: { slug: input.slug },
+          },
+          "Error in getBySlug"
         );
-        console.error(
-          "Error stack:",
-          error instanceof Error ? error.stack : "No stack trace"
-        );
-        console.error("Input slug:", input.slug);
         throw error;
       }
     }),
@@ -337,49 +420,21 @@ export const productsRouter = {
       // Apply changes transactionally
       await db.transaction(async (tx) => {
         // Upsert organization reference
-        if (existingRef) {
-          await tx
-            .update(organizationReference)
-            .set({
-              webUrl: input.url ?? existingRef.webUrl,
-              xUrl: input.xUrl ?? existingRef.xUrl,
-              linkedinUrl: input.linkedinUrl ?? existingRef.linkedinUrl,
-              sourceCodeUrl: input.sourceCodeUrl ?? existingRef.sourceCodeUrl,
-            })
-            .where(eq(organizationReference.id, existingRef.id));
-        } else if (
-          input.url ||
-          input.xUrl ||
-          input.linkedinUrl ||
-          input.sourceCodeUrl
-        ) {
-          await tx.insert(organizationReference).values({
-            id: crypto.randomUUID(),
-            organizationId: input.organizationId,
-            webUrl: input.url ?? "",
-            xUrl: input.xUrl ?? "",
-            linkedinUrl: input.linkedinUrl ?? null,
-            sourceCodeUrl: input.sourceCodeUrl ?? null,
-          });
-        }
+        await upsertOrganizationReference(tx, {
+          organizationId: input.organizationId,
+          existingRef,
+          url: input.url,
+          xUrl: input.xUrl,
+          linkedinUrl: input.linkedinUrl,
+          sourceCodeUrl: input.sourceCodeUrl,
+        });
 
-        // Update logo, gallery and release date directly on organization table
-        const orgUpdate: {
-          logo?: string | null;
-          gallery?: string[] | null;
-          releaseDate?: Date | null;
-        } = {};
-        if (input.logo !== undefined) {
-          orgUpdate.logo = input.logo;
-        }
-        if (input.gallery !== undefined) {
-          orgUpdate.gallery = input.gallery.length > 0 ? input.gallery : null;
-        }
-        if (input.releaseDateMs !== undefined) {
-          orgUpdate.releaseDate =
-            input.releaseDateMs === null ? null : new Date(input.releaseDateMs);
-        }
-
+        // Update organization fields
+        const orgUpdate = buildOrganizationUpdate({
+          logo: input.logo,
+          gallery: input.gallery,
+          releaseDateMs: input.releaseDateMs,
+        });
         if (Object.keys(orgUpdate).length > 0) {
           await tx
             .update(organization)

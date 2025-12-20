@@ -406,9 +406,7 @@ export function RevenueTable() {
   const { table } = useDataGrid({
     columns,
     data,
-    onDataChange: (data) => {
-      console.log(data);
-    },
+    onDataChange: (data) => {},
     enableSearch: true,
   });
 

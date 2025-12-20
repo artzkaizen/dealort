@@ -2,6 +2,7 @@ import { passkey } from "@better-auth/passkey";
 import { db } from "@dealort/db";
 import * as schema from "@dealort/db/schema/auth";
 import { env } from "@dealort/utils/env";
+import { authLogger } from "@dealort/utils/logger";
 import { type BetterAuthOptions, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
@@ -166,7 +167,10 @@ const authConfig: BetterAuthOptions = {
           organizationName: data.organization.name,
         });
 
-        console.log("sendInvitationEmail", res.data?.id, res.error);
+        authLogger.debug(
+          { resultId: res.data?.id, error: res.error },
+          "Invitation email sent via hook"
+        );
         // return res;
       },
       schema: {

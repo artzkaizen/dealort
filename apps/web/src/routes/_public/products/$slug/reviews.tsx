@@ -120,11 +120,7 @@ function ReviewsPage() {
   const handleSubmitReport = async (reason: string, description?: string) => {
     if (!reportTarget) return;
     // Implementation will be added when reports API is ready
-    console.log("Report submitted", {
-      reviewId: reportTarget,
-      reason,
-      description,
-    });
+    // TODO: Call reports API when ready
     setReportDialogOpen(false);
     setReportTarget(null);
   };

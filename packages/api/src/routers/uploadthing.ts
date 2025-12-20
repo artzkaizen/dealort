@@ -1,4 +1,5 @@
 import { auth } from "@dealort/auth";
+import { apiLogger } from "@dealort/utils/logger";
 import {
   createRouteHandler,
   createUploadthing,
@@ -66,8 +67,16 @@ export const uploadRouter: FileRouter = {
       // NOTE: This callback only works in production with a publicly accessible URL
       // (set via UPLOADTHING_CALLBACK_URL). In development, the update is handled
       // client-side via onClientUploadComplete.
-      console.log("onUploadComplete called (production only)!");
-      console.log("File URL:", file.url);
+      apiLogger.info(
+        {
+          fileUrl: file.url,
+          filename: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          uploadedBy: metadata.userId,
+        },
+        "Profile image upload complete"
+      );
 
       // In production, you could update the database here if needed
       // For now, we handle it client-side for better dev experience
@@ -105,8 +114,16 @@ export const uploadRouter: FileRouter = {
       return { userId: user.id, fileName };
     })
     .onUploadComplete(({ metadata, file }) => {
-      console.log("onUploadComplete called (production only)!");
-      console.log("File URL:", file.url);
+      apiLogger.info(
+        {
+          fileUrl: file.url,
+          filename: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          uploadedBy: metadata.userId,
+        },
+        "Product logo upload complete"
+      );
 
       return {
         filename: file.name,
@@ -143,8 +160,16 @@ export const uploadRouter: FileRouter = {
       return { userId: user.id, fileName };
     })
     .onUploadComplete(({ metadata, file }) => {
-      console.log("onUploadComplete called (production only)!");
-      console.log("File URL:", file.url);
+      apiLogger.info(
+        {
+          fileUrl: file.url,
+          filename: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          uploadedBy: metadata.userId,
+        },
+        "Product gallery upload complete"
+      );
 
       return {
         filename: file.name,

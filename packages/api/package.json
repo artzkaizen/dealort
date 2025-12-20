@@ -2,11 +2,11 @@
   "name": "@dealort/api",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
     "./*": {
-      "types": "./dist/*.d.ts",
+      "types": "./src/*.ts",
       "default": "./src/*.ts"
     }
   },
@@ -23,10 +23,12 @@
   "dependencies": {
     "@dealort/auth": "workspace:*",
     "@dealort/db": "workspace:*",
+    "@dealort/utils": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "arcjet": "catalog:",
     "drizzle-orm": "^0.44.2",
     "dotenv": "catalog:",
     "hono": "catalog:",

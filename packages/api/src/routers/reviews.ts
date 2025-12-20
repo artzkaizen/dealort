@@ -1,11 +1,60 @@
 import { db } from "@dealort/db";
 import { organization, user } from "@dealort/db/schema/auth";
 import { review } from "@dealort/db/schema/reviews";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../index";
 
-export const reviewsRouter = {
+// Helper function to update organization rating
+async function updateOrganizationRating(organizationId: string) {
+  const stats = await db
+    .select({
+      avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
+    })
+    .from(review)
+    .where(eq(review.organizationId, organizationId));
+
+  await db
+    .update(organization)
+    .set({
+      rating: Math.round(stats[0]?.avgRating ?? 0),
+    })
+    .where(eq(organization.id, organizationId));
+}
+
+// Helper function to build where conditions for review list
+function buildReviewWhereConditions(
+  organizationId: string,
+  filter: "all" | "my",
+  userId?: string
+): SQL {
+  let conditions = eq(review.organizationId, organizationId);
+  if (filter === "my" && userId) {
+    conditions = and(conditions, eq(review.userId, userId)) as SQL;
+  }
+  return conditions;
+}
+
+// Helper function to enrich review with user data
+async function enrichReviewWithUser(r: typeof review.$inferSelect) {
+  const reviewUser = await db.query.user.findFirst({
+    where: eq(user.id, r.userId),
+  });
+  return {
+    ...r,
+    user: reviewUser
+      ? {
+          id: reviewUser.id,
+          name: reviewUser.name,
+          username: reviewUser.username,
+          displayUsername: reviewUser.displayUsername,
+          image: reviewUser.image,
+        }
+      : null,
+  };
+}
+
+export const reviewsRouter: Record<string, unknown> = {
   /**
    * Create a review
    */
@@ -46,19 +95,7 @@ export const reviewsRouter = {
       });
 
       // Update organization average rating
-      const stats = await db
-        .select({
-          avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
-        })
-        .from(review)
-        .where(eq(review.organizationId, input.organizationId));
-
-      await db
-        .update(organization)
-        .set({
-          rating: Math.round(stats[0]?.avgRating ?? 0),
-        })
-        .where(eq(organization.id, input.organizationId));
+      await updateOrganizationRating(input.organizationId);
 
       return { id, success: true };
     }),
@@ -101,19 +138,7 @@ export const reviewsRouter = {
         .where(eq(review.id, input.id));
 
       // Update organization average rating
-      const stats = await db
-        .select({
-          avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
-        })
-        .from(review)
-        .where(eq(review.organizationId, existingReview.organizationId));
-
-      await db
-        .update(organization)
-        .set({
-          rating: Math.round(stats[0]?.avgRating ?? 0),
-        })
-        .where(eq(organization.id, existingReview.organizationId));
+      await updateOrganizationRating(existingReview.organizationId);
 
       return { success: true };
     }),
@@ -142,19 +167,7 @@ export const reviewsRouter = {
       await db.delete(review).where(eq(review.id, input.id));
 
       // Update organization average rating
-      const stats = await db
-        .select({
-          avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
-        })
-        .from(review)
-        .where(eq(review.organizationId, existingReview.organizationId));
-
-      await db
-        .update(organization)
-        .set({
-          rating: Math.round(stats[0]?.avgRating ?? 0),
-        })
-        .where(eq(organization.id, existingReview.organizationId));
+      await updateOrganizationRating(existingReview.organizationId);
 
       return { success: true };
     }),
@@ -175,37 +188,12 @@ export const reviewsRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      let whereConditions = eq(review.organizationId, input.organizationId);
-
-      // Filter by user if "my reviews"
-      if (input.filter === "my" && context.session?.user) {
-        whereConditions = and(
-          whereConditions,
-          eq(review.userId, context.session.user.id)
-        ) as any;
-      }
-
-      // Build query with cursor pagination
-      let query = db
-        .select()
-        .from(review)
-        .where(whereConditions)
-        .limit(input.limit + 1); // Fetch one extra to check if there's more
-
-      // Apply sorting
-      if (input.sortBy === "recent") {
-        query = query.orderBy(desc(review.createdAt)) as any;
-      } else if (input.sortBy === "top_rating") {
-        query = query.orderBy(
-          desc(review.rating),
-          desc(review.createdAt)
-        ) as any;
-      } else if (input.sortBy === "lowest_rating") {
-        query = query.orderBy(
-          asc(review.rating),
-          desc(review.createdAt)
-        ) as any;
-      }
+      const userId = context.session?.user?.id;
+      let whereConditions = buildReviewWhereConditions(
+        input.organizationId,
+        input.filter,
+        userId
+      );
 
       // Apply cursor if provided
       if (input.cursor) {
@@ -217,60 +205,43 @@ export const reviewsRouter = {
             whereConditions = and(
               whereConditions,
               sql`${review.createdAt} < ${cursorReview.createdAt}`
-            ) as any;
+            ) as SQL;
           } else {
             whereConditions = and(
               whereConditions,
               sql`${review.id} != ${input.cursor}`
-            ) as any;
-          }
-          query = db
-            .select()
-            .from(review)
-            .where(whereConditions)
-            .limit(input.limit + 1) as any;
-          if (input.sortBy === "recent") {
-            query = query.orderBy(desc(review.createdAt)) as any;
-          } else if (input.sortBy === "top_rating") {
-            query = query.orderBy(
-              desc(review.rating),
-              desc(review.createdAt)
-            ) as any;
-          } else if (input.sortBy === "lowest_rating") {
-            query = query.orderBy(
-              asc(review.rating),
-              desc(review.createdAt)
-            ) as any;
+            ) as SQL;
           }
         }
       }
 
-      const reviews = (await query) as any;
+      // Build and execute query with sorting
+      const baseQuery = db.select().from(review).where(whereConditions);
 
+      let reviews: (typeof review.$inferSelect)[];
+      if (input.sortBy === "recent") {
+        reviews = await baseQuery
+          .orderBy(desc(review.createdAt))
+          .limit(input.limit + 1);
+      } else if (input.sortBy === "top_rating") {
+        reviews = await baseQuery
+          .orderBy(desc(review.rating), desc(review.createdAt))
+          .limit(input.limit + 1);
+      } else {
+        reviews = await baseQuery
+          .orderBy(asc(review.rating), desc(review.createdAt))
+          .limit(input.limit + 1);
+      }
+
+      // Process pagination
       const hasMore = reviews.length > input.limit;
       const items = hasMore ? reviews.slice(0, input.limit) : reviews;
       const nextCursor =
         hasMore && items.length > 0 ? (items.at(-1)?.id ?? null) : null;
 
-      // Fetch user data for each review
+      // Enrich with user data
       const reviewsWithUsers = await Promise.all(
-        items.map(async (r: typeof review.$inferSelect) => {
-          const reviewUser = await db.query.user.findFirst({
-            where: eq(user.id, r.userId),
-          });
-          return {
-            ...r,
-            user: reviewUser
-              ? {
-                  id: reviewUser.id,
-                  name: reviewUser.name,
-                  username: reviewUser.username,
-                  displayUsername: reviewUser.displayUsername,
-                  image: reviewUser.image,
-                }
-              : null,
-          };
-        })
+        items.map(enrichReviewWithUser)
       );
 
       return {

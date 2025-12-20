@@ -47,7 +47,6 @@ export const Route = createFileRoute("/dashboard/products/$slug/edit")({
         sourceCodeUrl: organizationMetadata.sourceCodeURL,
       },
     };
-    console.log(organization);
     if (!organization) {
       throw redirect({
         to: "/dashboard/products",
@@ -154,8 +153,6 @@ function RouteComponent() {
     },
   };
 
-  console.log(initialValues);
-
   function buildGetStartedData(data: ProductFormData): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
     if (typeof data.getStarted.isDev === "boolean")
@@ -209,7 +206,6 @@ function RouteComponent() {
         },
         {
           onError: (error) => {
-            console.error(error);
             toast.error(
               error.error?.message ||
                 error.error?.statusText ||
@@ -238,7 +234,6 @@ function RouteComponent() {
         params: { slug: organization?.slug ?? "" },
       });
     } catch (error) {
-      console.error(error);
       toast.error("Failed to update product");
     }
   }

@@ -34,7 +34,7 @@ export function OverviewAnalytics() {
       label: "Revenue",
       value: "Coming Soon!",
       change: {
-        value: "Comimg Soon!!",
+        value: "",
         positive: true,
         percent: "+0%",
       },
@@ -72,7 +72,7 @@ export function OverviewAnalytics() {
       label: "Expectancy",
       value: "Coming Soon!",
       change: {
-        value: "+0%",
+        value: "",
         positive: true,
         percent: "+0%",
       },

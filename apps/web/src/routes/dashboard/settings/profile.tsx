@@ -172,7 +172,6 @@ function RouteComponent() {
                   return files;
                 }}
                 onClientUploadComplete={async (res) => {
-                  console.log("Files: ", res);
                   if (res?.[0]?.ufsUrl) {
                     try {
                       await client.updateUserImage({ image: res[0].ufsUrl });
@@ -180,7 +179,6 @@ function RouteComponent() {
                       // navigate({ to: "/dashboard/settings/profile" });
                       refetch();
                     } catch (error) {
-                      console.error("Error updating user image:", error);
                       toast.error("Failed to update profile picture");
                     }
                   }
@@ -188,7 +186,6 @@ function RouteComponent() {
                 }}
                 onUploadError={(error: Error) => {
                   // Do something with the error.
-                  console.log(error);
                   setIsUploading(false);
 
                   toast.error(`ERROR! ${error.message}`);

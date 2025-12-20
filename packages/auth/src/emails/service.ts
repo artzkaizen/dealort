@@ -1,4 +1,5 @@
 import { env } from "@dealort/utils/env";
+import { emailLogger } from "@dealort/utils/logger";
 import { Resend } from "resend";
 import { DeleteVerificationEmail } from "./delete-verification";
 import { InvitationEmail } from "./invitation";
@@ -16,7 +17,7 @@ export async function sendWelcomeEmail({
   to: string;
   name: string;
 }) {
-  console.log(`[Email Service] Sending welcome email to: ${to}`);
+  emailLogger.info({ to, name }, "Sending welcome email");
 
   if (!env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY is not set");
@@ -31,7 +32,10 @@ export async function sendWelcomeEmail({
     text: email.text,
   });
 
-  console.log("[Email Service] Welcome email result:", result);
+  emailLogger.info(
+    { to, resultId: result.data?.id, error: result.error },
+    "Welcome email sent"
+  );
   return result;
 }
 
@@ -136,7 +140,10 @@ export async function sendInvitationEmail({
   invitationExpiresAt: string;
   organizationName: string;
 }) {
-  console.log(`[Email Service] Sending invitation email to: ${to}`);
+  emailLogger.info(
+    { to, organizationName, invitedBy },
+    "Sending invitation email"
+  );
 
   if (!env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY is not set");
@@ -156,6 +163,9 @@ export async function sendInvitationEmail({
     text: email.text,
   });
 
-  console.log("[Email Service] Invitation email result:", result);
+  emailLogger.info(
+    { to, resultId: result.data?.id, error: result.error },
+    "Invitation email sent"
+  );
   return result;
 }

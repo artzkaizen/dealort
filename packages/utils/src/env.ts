@@ -13,11 +13,26 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     CORS_ORIGIN: z.string().min(1),
     DATABASE_URL: z.string().startsWith("file:").min(1), // Use startsWith to validate the prefix
-    ARCJET_KEY: z.string().optional(), // Optional for development, required for production
+    ARCJET_KEY: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          // Require ARCJET_KEY in production
+          if (process.env.NODE_ENV === "production") {
+            return val !== undefined && val.length > 0;
+          }
+          return true; // Optional in development
+        },
+        {
+          message: "ARCJET_KEY is required in production environment",
+        }
+      ),
     RESEND_API_KEY: z.string().min(1),
     RESEND_FROM_EMAIL: z.string().email().optional(), // Optional, defaults to Resend domain
     UPLOADTHING_TOKEN: z.string().min(1),
     UPLOADTHING_CALLBACK_URL: z.string().min(1),
+    SENTRY_DSN: z.string().url().optional(), // Optional error tracking
   },
 
   client: {

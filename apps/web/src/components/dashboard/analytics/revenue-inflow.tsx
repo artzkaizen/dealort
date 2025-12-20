@@ -110,7 +110,6 @@ export function RevenueInflow() {
     const startDate = new Date(referenceDate);
     startDate.setDate(startDate.getDate() + daysToSubtract);
 
-    console.log(startDate);
     return chartData.filter((item) => {
       const date = new Date(item.date);
       return date >= startDate;

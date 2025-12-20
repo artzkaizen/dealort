@@ -1062,7 +1062,6 @@ export function ProductForm({
       return files;
     },
     onUploadError: (error) => {
-      console.error(error);
       toast.error(error.message);
       setIsUploadingLogo(false);
     },
@@ -1080,7 +1079,6 @@ export function ProductForm({
       return files;
     },
     onUploadError: (error) => {
-      console.error(error);
       toast.error(error.message);
       setIsUploadingGallery(false);
     },
