@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowUpAZIcon, ListFilter } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRightIcon, ArrowUpAZIcon, ListFilter } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ProductCard,
   ProductCardCategory,
@@ -11,7 +12,6 @@ import {
   ProductCardRateAndReview,
   ProductCardTimeAndDuration,
 } from "@/components/product-card";
-// SHADCN components (adjust paths to match your project)
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -26,13 +26,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-// categories array from utils/constants
 import { categories as allCategories } from "@/utils/constants";
-import {
-  sampleComments as comments,
-  sampleProducts as products,
-  sampleReviews as reviews,
-} from "@/utils/dummy";
+import { client } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_public/products/")({
   component: RouteComponent,
@@ -44,20 +39,58 @@ function RouteComponent() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categorySearch, setCategorySearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // compute counts of categories from products
+  // Fetch products with infinite query
+  const {
+    data: productsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: ["products", "list", selectedCategories, sortMode],
+    queryFn: async ({ pageParam }: { pageParam: string | undefined }) =>
+      client.products.list({
+        cursor: pageParam,
+        limit: 10,
+        categories:
+          selectedCategories.length > 0 ? selectedCategories : undefined,
+        sortBy: sortMode,
+      }),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    initialPageParam: undefined as string | undefined,
+  });
+
+  // Fetch upcoming launches (limited to 10)
+  const { data: upcomingLaunches } = useQuery({
+    queryKey: ["products", "listLaunches", "launching_soon"],
+    queryFn: () =>
+      client.products.listLaunches({
+        sortBy: "launching_soon",
+        limit: 10,
+      }),
+  });
+
+  // Flatten all products from pages
+  const allProducts = useMemo(
+    () => productsData?.pages.flatMap((page) => page.items) ?? [],
+    [productsData]
+  );
+
+  // Compute category counts from all products
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();
     for (const c of allCategories) {
       map.set(c, 0);
     }
-    for (const p of products) {
-      for (const cat of p.category || []) {
-        map.set(cat, (map.get(cat) || 0) + 1);
+    for (const p of allProducts) {
+      for (const cat of p.category ?? []) {
+        map.set(cat, (map.get(cat) ?? 0) + 1);
       }
     }
     return map;
-  }, []);
+  }, [allProducts]);
 
   const toggleCategory = (category: string) =>
     setSelectedCategories((prev) =>
@@ -66,64 +99,48 @@ function RouteComponent() {
         : [...prev, category]
     );
 
-  // filtered then sorted products
-  const visibleProducts = useMemo(() => {
-    const filtered = products.filter((p) => {
-      if (selectedCategories.length === 0) return true;
-      return selectedCategories.some((c) => (p.category || []).includes(c));
-    });
+  // Upcoming launch products (first 10)
+  const upcomingLaunchProducts = useMemo(
+    () => (upcomingLaunches?.items ?? []).slice(0, 10),
+    [upcomingLaunches]
+  );
 
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortMode === "newest") {
-        const ta = new Date(a.createdAt).getTime();
-        const tb = new Date(b.createdAt).getTime();
-        return tb - ta;
-      }
-
-      if (sortMode === "top") {
-        // top by rating then impressions
-        const ra = a.rating ?? 0;
-        const rb = b.rating ?? 0;
-        if (rb !== ra) return rb - ra;
-        return (b.impressions ?? 0) - (a.impressions ?? 0);
-      }
-
-      // trending: impressions then createdAt
-      if (sortMode === "trending") {
-        const ia = a.impressions ?? 0;
-        const ib = b.impressions ?? 0;
-        if (ib !== ia) return ib - ia;
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      }
-
-      return 0;
-    });
-
-    return sorted;
-  }, [selectedCategories, sortMode]);
-
-  const upcomingLaunchProducts = useMemo(() => {
-    const now = Date.now();
-    return products
-      .filter((p) => {
-        if (!p.launchDate) return false;
-        const launchTs = new Date(p.launchDate).getTime();
-        return launchTs > now;
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.launchDate ?? "").getTime() -
-          new Date(b.launchDate ?? "").getTime()
-      );
-  }, []);
-
-  // categories to show filtered by search
+  // Categories to show filtered by search
   const categoriesToShow = useMemo(() => {
     const q = categorySearch.trim().toLowerCase();
     return allCategories.filter((c) => c.toLowerCase().includes(q));
   }, [categorySearch]);
+
+  // Helper to format date for components
+  const formatDate = (date: Date | string | null | undefined): string => {
+    if (!date) return "";
+    if (typeof date === "string") return date;
+    return date.toISOString().split("T")[0];
+  };
+
+  // Infinite scroll: detect when user reaches bottom
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <main>
@@ -263,55 +280,77 @@ function RouteComponent() {
           </div>
 
           <div className="space-y-2">
-            {visibleProducts.map((product) => {
-              const productReviews = reviews.filter(
-                (reply) => reply.productId === product?.id
-              );
+            {isLoading && (
+              <div className="py-12 text-center text-muted-foreground">
+                Loading products...
+              </div>
+            )}
 
-              const productComments = comments.filter(
-                (comment) => comment.productId === product?.id
-              );
+            {!isLoading && allProducts.length === 0 && (
+              <div className="py-12 text-center text-muted-foreground">
+                No products found
+              </div>
+            )}
 
-              return (
-                <ProductCard className="rounded-lg" key={product.id}>
-                  <div className="flex justify-between gap-4 max-sm:flex-wrap">
-                    <div className="flex items-start gap-1">
-                      <ProductCardLogo
-                        logo={product.logo || ""}
-                        name={product.name}
-                      />
-                      <div className="flex flex-col gap-px">
-                        <ProductCardDetails
-                          name={product.name}
-                          tagline={product.tagline}
-                        />
-                        <ProductCardRateAndReview
-                          rating={product.rating}
-                          reviewsCount={productReviews.length}
-                        />
-                        <ProductCardCategory
-                          category={product.category}
-                          className="mt-2 flex-wrap"
-                        />
-
-                        <ProductCardLaunchInfo
-                          launchDate={product.launchDate || ""}
-                        />
-
-                        <ProductCardTimeAndDuration
-                          createdAt={product.createdAt}
-                        />
-                      </div>
-                    </div>
-
-                    <ProductCardCommentAndImpressionCount
-                      commentCount={productComments.length}
-                      impressions={product.impressions}
+            {allProducts.map((product) => (
+              <ProductCard className="rounded-lg" key={product.id}>
+                <div className="flex justify-between gap-4 max-sm:flex-wrap">
+                  <div className="flex items-start gap-1">
+                    <ProductCardLogo
+                      logo={product.logo ?? ""}
+                      name={product.name}
                     />
+                    <div className="flex flex-col gap-px">
+                      <ProductCardDetails
+                        name={product.name}
+                        slug={product.slug}
+                        tagline={product.tagline}
+                      />
+                      <ProductCardRateAndReview
+                        rating={product.rating}
+                        reviewsCount={product.reviewCount}
+                      />
+                      <ProductCardCategory
+                        category={product.category}
+                        className="mt-2 flex-wrap"
+                      />
+
+                      {product.releaseDate && (
+                        <ProductCardLaunchInfo
+                          launchDate={formatDate(product.releaseDate)}
+                        />
+                      )}
+
+                      <ProductCardTimeAndDuration
+                        createdAt={formatDate(product.createdAt)}
+                      />
+                    </div>
                   </div>
-                </ProductCard>
-              );
-            })}
+
+                  <ProductCardCommentAndImpressionCount
+                    commentCount={product.commentCount}
+                    impressions={product.impressions}
+                  />
+                </div>
+              </ProductCard>
+            ))}
+
+            {/* Infinite scroll trigger */}
+            <div className="h-4" ref={loadMoreRef} />
+
+            {/* Loading indicator */}
+            {isFetchingNextPage && (
+              <div className="py-4 text-center text-muted-foreground text-sm">
+                Loading more products...
+              </div>
+            )}
+
+            {/* End of results */}
+            {!hasNextPage && allProducts.length > 0 && (
+              <div className="py-4 text-center text-muted-foreground text-sm">
+                No more contents to load
+              </div>
+            )}
           </div>
         </main>
 
@@ -329,23 +368,34 @@ function RouteComponent() {
                 <div className="flex justify-between gap-4">
                   <div className="flex items-start gap-1">
                     <ProductCardLogo
-                      logo={product.logo || ""}
+                      logo={product.logo ?? ""}
                       name={product.name}
                     />
                     <div className="flex flex-col gap-px">
                       <ProductCardDetails
                         className="[&>a]:text-xs [&>p]:text-[10px]"
                         name={product.name}
+                        slug={product.slug}
                         tagline={product.tagline}
                       />
-                      <ProductCardLaunchInfo
-                        launchDate={product.launchDate || ""}
-                      />
+                      {product.releaseDate && (
+                        <ProductCardLaunchInfo
+                          launchDate={formatDate(product.releaseDate)}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
               </ProductCard>
             ))}
+
+            {upcomingLaunchProducts.length > 0 && (
+              <Button asChild className="w-full" variant="outline">
+                <Link to="/launches">
+                  View All Launches <ArrowRightIcon />
+                </Link>
+              </Button>
+            )}
           </div>
         </aside>
       </section>

@@ -44,18 +44,21 @@ export function ProductCardLogo({
 interface ProductCardDetailsProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
   tagline: string;
+  slug?: string;
 }
 export function ProductCardDetails({
   className,
   name,
   tagline,
+  slug,
   ...props
 }: ProductCardDetailsProps) {
+  const productSlug = slug ?? name.toLowerCase();
   return (
     <div className={cn("flex flex-col gap-px", className)} {...props}>
       <Link
         className="group flex font-semibold hover:text-chart-3 hover:underline max-sm:text-sm [&>svg]:size-3"
-        to={`/products/${encodeURIComponent(name.toLowerCase())}`}
+        to={`/products/${encodeURIComponent(productSlug)}`}
       >
         {name}
         <ExternalLinkIcon className="opacity-0 transition-opacity group-hover:opacity-100" />

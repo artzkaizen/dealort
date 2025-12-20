@@ -15,7 +15,6 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as AcceptInvitationTokenRouteImport } from './routes/accept-invitation/$token'
 import { Route as PublicLaunchesRouteImport } from './routes/_public/launches'
 import { Route as DashboardSettingsLayoutRouteImport } from './routes/dashboard/settings/layout'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
@@ -28,6 +27,7 @@ import { Route as DashboardSettingsDangerRouteImport } from './routes/dashboard/
 import { Route as DashboardSettingsAppearanceRouteImport } from './routes/dashboard/settings/appearance'
 import { Route as DashboardSettingsAccountsRouteImport } from './routes/dashboard/settings/accounts'
 import { Route as DashboardProductsNewRouteImport } from './routes/dashboard/products/new'
+import { Route as PublicAcceptInvitationTokenRouteImport } from './routes/_public/accept-invitation/$token'
 import { Route as DashboardProductsSlugIndexRouteImport } from './routes/dashboard/products/$slug/index'
 import { Route as PublicProductsSlugIndexRouteImport } from './routes/_public/products/$slug/index'
 import { Route as DashboardProductsSlugEditRouteImport } from './routes/dashboard/products/$slug/edit'
@@ -60,11 +60,6 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AcceptInvitationTokenRoute = AcceptInvitationTokenRouteImport.update({
-  id: '/accept-invitation/$token',
-  path: '/accept-invitation/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicLaunchesRoute = PublicLaunchesRouteImport.update({
@@ -132,6 +127,12 @@ const DashboardProductsNewRoute = DashboardProductsNewRouteImport.update({
   path: '/products/new',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const PublicAcceptInvitationTokenRoute =
+  PublicAcceptInvitationTokenRouteImport.update({
+    id: '/accept-invitation/$token',
+    path: '/accept-invitation/$token',
+    getParentRoute: () => PublicLayoutRoute,
+  } as any)
 const DashboardProductsSlugIndexRoute =
   DashboardProductsSlugIndexRouteImport.update({
     id: '/products/$slug/',
@@ -160,11 +161,11 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsLayoutRouteWithChildren
   '/launches': typeof PublicLaunchesRoute
-  '/accept-invitation/$token': typeof AcceptInvitationTokenRoute
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/': typeof PublicIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/accept-invitation/$token': typeof PublicAcceptInvitationTokenRoute
   '/dashboard/products/new': typeof DashboardProductsNewRoute
   '/dashboard/settings/accounts': typeof DashboardSettingsAccountsRoute
   '/dashboard/settings/appearance': typeof DashboardSettingsAppearanceRoute
@@ -182,11 +183,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/launches': typeof PublicLaunchesRoute
-  '/accept-invitation/$token': typeof AcceptInvitationTokenRoute
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/': typeof PublicIndexRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/accept-invitation/$token': typeof PublicAcceptInvitationTokenRoute
   '/dashboard/products/new': typeof DashboardProductsNewRoute
   '/dashboard/settings/accounts': typeof DashboardSettingsAccountsRoute
   '/dashboard/settings/appearance': typeof DashboardSettingsAppearanceRoute
@@ -208,11 +209,11 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsLayoutRouteWithChildren
   '/_public/launches': typeof PublicLaunchesRoute
-  '/accept-invitation/$token': typeof AcceptInvitationTokenRoute
   '/auth/login': typeof AuthLoginRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/_public/': typeof PublicIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/_public/accept-invitation/$token': typeof PublicAcceptInvitationTokenRoute
   '/dashboard/products/new': typeof DashboardProductsNewRoute
   '/dashboard/settings/accounts': typeof DashboardSettingsAccountsRoute
   '/dashboard/settings/appearance': typeof DashboardSettingsAppearanceRoute
@@ -234,11 +235,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/settings'
     | '/launches'
-    | '/accept-invitation/$token'
     | '/auth/login'
     | '/dashboard/analytics'
     | '/'
     | '/dashboard/'
+    | '/accept-invitation/$token'
     | '/dashboard/products/new'
     | '/dashboard/settings/accounts'
     | '/dashboard/settings/appearance'
@@ -256,11 +257,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/launches'
-    | '/accept-invitation/$token'
     | '/auth/login'
     | '/dashboard/analytics'
     | '/'
     | '/dashboard'
+    | '/accept-invitation/$token'
     | '/dashboard/products/new'
     | '/dashboard/settings/accounts'
     | '/dashboard/settings/appearance'
@@ -281,11 +282,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/settings'
     | '/_public/launches'
-    | '/accept-invitation/$token'
     | '/auth/login'
     | '/dashboard/analytics'
     | '/_public/'
     | '/dashboard/'
+    | '/_public/accept-invitation/$token'
     | '/dashboard/products/new'
     | '/dashboard/settings/accounts'
     | '/dashboard/settings/appearance'
@@ -305,7 +306,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
-  AcceptInvitationTokenRoute: typeof AcceptInvitationTokenRoute
   AuthLoginRoute: typeof AuthLoginRoute
 }
 
@@ -351,13 +351,6 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/accept-invitation/$token': {
-      id: '/accept-invitation/$token'
-      path: '/accept-invitation/$token'
-      fullPath: '/accept-invitation/$token'
-      preLoaderRoute: typeof AcceptInvitationTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/launches': {
@@ -444,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProductsNewRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_public/accept-invitation/$token': {
+      id: '/_public/accept-invitation/$token'
+      path: '/accept-invitation/$token'
+      fullPath: '/accept-invitation/$token'
+      preLoaderRoute: typeof PublicAcceptInvitationTokenRouteImport
+      parentRoute: typeof PublicLayoutRoute
+    }
     '/dashboard/products/$slug/': {
       id: '/dashboard/products/$slug/'
       path: '/products/$slug'
@@ -478,6 +478,7 @@ declare module '@tanstack/react-router' {
 interface PublicLayoutRouteChildren {
   PublicLaunchesRoute: typeof PublicLaunchesRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicAcceptInvitationTokenRoute: typeof PublicAcceptInvitationTokenRoute
   PublicProductsIndexRoute: typeof PublicProductsIndexRoute
   PublicProductsSlugReviewsRoute: typeof PublicProductsSlugReviewsRoute
   PublicProductsSlugIndexRoute: typeof PublicProductsSlugIndexRoute
@@ -486,6 +487,7 @@ interface PublicLayoutRouteChildren {
 const PublicLayoutRouteChildren: PublicLayoutRouteChildren = {
   PublicLaunchesRoute: PublicLaunchesRoute,
   PublicIndexRoute: PublicIndexRoute,
+  PublicAcceptInvitationTokenRoute: PublicAcceptInvitationTokenRoute,
   PublicProductsIndexRoute: PublicProductsIndexRoute,
   PublicProductsSlugReviewsRoute: PublicProductsSlugReviewsRoute,
   PublicProductsSlugIndexRoute: PublicProductsSlugIndexRoute,
@@ -548,7 +550,6 @@ const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   PublicLayoutRoute: PublicLayoutRouteWithChildren,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
-  AcceptInvitationTokenRoute: AcceptInvitationTokenRoute,
   AuthLoginRoute: AuthLoginRoute,
 }
 export const routeTree = rootRouteImport

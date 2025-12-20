@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/accept-invitation/$token")({
+export const Route = createFileRoute("/_public/accept-invitation/$token")({
   component: RouteComponent,
 });
 

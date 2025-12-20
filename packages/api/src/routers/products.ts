@@ -7,9 +7,61 @@ import {
 } from "@dealort/db/schema/auth";
 import { organizationReference } from "@dealort/db/schema/org_meta";
 import { comment, review } from "@dealort/db/schema/reviews";
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../index";
+
+// Helper function to enrich organization with stats
+async function enrichOrganizationWithStats(
+  org: typeof organization.$inferSelect
+) {
+  // Get review count
+  const reviewStats = await db
+    .select({
+      count: count(),
+      avgRating: sql<number>`COALESCE(AVG(${review.rating}), 0)`,
+    })
+    .from(review)
+    .where(eq(review.organizationId, org.id));
+
+  // Get comment count
+  const commentCount = await db
+    .select({ count: count() })
+    .from(comment)
+    .where(eq(comment.organizationId, org.id));
+
+  // Get reference URLs
+  const ref = await db.query.organizationReference.findFirst({
+    where: eq(organizationReference.organizationId, org.id),
+  });
+
+  const logo = org.logo ?? null;
+  const gallery = (org.gallery as string[] | null) ?? [];
+  const category = (org.category as string[] | null) ?? [];
+
+  return {
+    id: org.id,
+    name: org.name,
+    slug: org.slug,
+    tagline: org.tagline,
+    description: org.description ?? null,
+    category,
+    url: ref?.webUrl ?? null,
+    xURL: ref?.xUrl ?? null,
+    linkedinURL: ref?.linkedinUrl ?? null,
+    sourceCodeURL: ref?.sourceCodeUrl ?? null,
+    isDev: org.isDev,
+    isOpenSource: org.isOpenSource,
+    rating: Number(reviewStats[0]?.avgRating ?? 0),
+    impressions: org.impressions,
+    logo,
+    gallery,
+    createdAt: org.createdAt,
+    releaseDate: org.releaseDate,
+    reviewCount: reviewStats[0]?.count ?? 0,
+    commentCount: commentCount[0]?.count ?? 0,
+  };
+}
 
 export const productsRouter = {
   /**
@@ -337,6 +389,204 @@ export const productsRouter = {
       });
 
       return { success: true };
+    }),
+
+  /**
+   * List products with pagination, filtering, and sorting
+   */
+  list: publicProcedure
+    .input(
+      z.object({
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(50).default(10),
+        categories: z.array(z.string()).optional(),
+        sortBy: z.enum(["newest", "top", "trending"]).default("newest"),
+      })
+    )
+    .handler(async ({ input }) => {
+      // Fetch all listed products (we'll filter categories in memory for simplicity)
+      // For production with large datasets, consider using a proper JSON search or separate category table
+      const allOrgs = await db.query.organization.findMany({
+        where: eq(organization.isListed, true),
+        orderBy: [desc(organization.createdAt)],
+      });
+
+      // Filter by categories if provided
+      let filteredOrgs = allOrgs;
+      if (input.categories && input.categories.length > 0) {
+        filteredOrgs = allOrgs.filter((org) => {
+          const orgCategories = (org.category as string[] | null) ?? [];
+          return input.categories?.some((cat) => orgCategories.includes(cat));
+        });
+      }
+
+      // Sort the filtered results
+      if (input.sortBy === "newest") {
+        filteredOrgs.sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+        );
+      } else if (input.sortBy === "top") {
+        filteredOrgs.sort((a, b) => {
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          return b.impressions - a.impressions;
+        });
+      } else if (input.sortBy === "trending") {
+        filteredOrgs.sort((a, b) => {
+          if (b.impressions !== a.impressions) {
+            return b.impressions - a.impressions;
+          }
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        });
+      }
+
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (input.cursor) {
+        const cursorIndex = filteredOrgs.findIndex(
+          (org) => org.id === input.cursor
+        );
+        if (cursorIndex >= 0) {
+          startIndex = cursorIndex + 1;
+        }
+      }
+
+      const paginatedOrgs = filteredOrgs.slice(
+        startIndex,
+        startIndex + input.limit + 1
+      );
+      const hasMore = paginatedOrgs.length > input.limit;
+      const items = hasMore
+        ? paginatedOrgs.slice(0, input.limit)
+        : paginatedOrgs;
+
+      // Enrich with stats
+      const productsWithStats = await Promise.all(
+        items.map((org) => enrichOrganizationWithStats(org))
+      );
+
+      return {
+        items: productsWithStats,
+        nextCursor:
+          hasMore && items.length > 0 ? (items.at(-1)?.id ?? null) : null,
+        hasMore,
+      };
+    }),
+
+  /**
+   * List launches with pagination and sorting
+   */
+  listLaunches: publicProcedure
+    .input(
+      z.object({
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(50).default(10),
+        categories: z.array(z.string()).optional(),
+        sortBy: z
+          .enum(["recent_launch", "top_launches", "launching_soon"])
+          .default("recent_launch"),
+      })
+    )
+    .handler(async ({ input }) => {
+      const now = new Date();
+
+      // Fetch all listed products with releaseDate
+      const allOrgs = await db.query.organization.findMany({
+        where: and(eq(organization.isListed, true)),
+      });
+
+      // Filter by categories if provided
+      let filteredOrgs = allOrgs.filter((org) => org.releaseDate !== null);
+      if (input.categories && input.categories.length > 0) {
+        filteredOrgs = filteredOrgs.filter((org) => {
+          const orgCategories = (org.category as string[] | null) ?? [];
+          return input.categories?.some((cat) => orgCategories.includes(cat));
+        });
+      }
+
+      if (input.sortBy === "recent_launch") {
+        // Recent launch: release date before now, closest to now
+        filteredOrgs = filteredOrgs.filter(
+          (org) => org.releaseDate && org.releaseDate <= now
+        );
+        filteredOrgs.sort(
+          (a, b) =>
+            (b.releaseDate?.getTime() ?? 0) - (a.releaseDate?.getTime() ?? 0)
+        );
+      } else if (input.sortBy === "top_launches") {
+        // Top launches: highest impressions and ratings
+        filteredOrgs.sort((a, b) => {
+          if (b.impressions !== a.impressions) {
+            return b.impressions - a.impressions;
+          }
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        });
+      } else if (input.sortBy === "launching_soon") {
+        // Launching soon: release date after now, closest to now
+        filteredOrgs = filteredOrgs.filter(
+          (org) => org.releaseDate && org.releaseDate > now
+        );
+        filteredOrgs.sort(
+          (a, b) =>
+            (a.releaseDate?.getTime() ?? 0) - (b.releaseDate?.getTime() ?? 0)
+        );
+      }
+
+      // Apply cursor pagination
+      let startIndex = 0;
+      if (input.cursor) {
+        const cursorIndex = filteredOrgs.findIndex(
+          (org) => org.id === input.cursor
+        );
+        if (cursorIndex >= 0) {
+          startIndex = cursorIndex + 1;
+        }
+      }
+
+      const paginatedOrgs = filteredOrgs.slice(
+        startIndex,
+        startIndex + input.limit + 1
+      );
+      const hasMore = paginatedOrgs.length > input.limit;
+      const items = hasMore
+        ? paginatedOrgs.slice(0, input.limit)
+        : paginatedOrgs;
+
+      // Enrich with stats
+      const launchesWithStats = await Promise.all(
+        items.map((org) => enrichOrganizationWithStats(org))
+      );
+
+      return {
+        items: launchesWithStats,
+        nextCursor:
+          hasMore && items.length > 0 ? (items.at(-1)?.id ?? null) : null,
+        hasMore,
+      };
+    }),
+
+  /**
+   * Get recent listed products for sidebar
+   */
+  listRecent: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(20).default(10),
+      })
+    )
+    .handler(async ({ input }) => {
+      const orgs = await db.query.organization.findMany({
+        where: eq(organization.isListed, true),
+        orderBy: [desc(organization.createdAt)],
+        limit: input.limit,
+      });
+
+      // Enrich with stats
+      const productsWithStats = await Promise.all(
+        orgs.map((org) => enrichOrganizationWithStats(org))
+      );
+
+      return productsWithStats;
     }),
 };
 
