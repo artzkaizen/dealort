@@ -16,8 +16,13 @@ import {
 } from "@/components/ui/carousel";
 import { Image as ImageComponent } from "@/components/ui/image";
 import { authClient } from "@/lib/auth-client";
+import {
+  getOrganizationGallery,
+  getOrganizationLogo,
+} from "@/lib/organization-utils";
 import { slugify } from "@/lib/utils";
-import { client, orpc } from "@/utils/orpc";
+import type { OrganizationWithMetadata } from "@/types/organization";
+import { client } from "@/utils/orpc";
 
 export const Route = createFileRoute("/dashboard/products/$slug/edit")({
   loader: async ({ params }) => {
@@ -34,28 +39,39 @@ export const Route = createFileRoute("/dashboard/products/$slug/edit")({
       },
     });
 
-    const organizationMetadata = await client.products.getBySlug({
-      slug: params.slug,
-    });
-
-    const organization = {
-      ...fullOrganization?.data,
-      references: {
-        webUrl: organizationMetadata.url,
-        xUrl: organizationMetadata.xURL,
-        linkedinUrl: organizationMetadata.linkedinURL,
-        sourceCodeUrl: organizationMetadata.sourceCodeURL,
-      },
-    };
-    if (!organization) {
+    if (!fullOrganization?.data) {
       throw redirect({
         to: "/dashboard/products",
       });
     }
 
+    const organizationMetadata = await (
+      client.products as {
+        getBySlug: (params: { slug: string }) => Promise<{
+          url: string | null;
+          xURL: string | null;
+          linkedinURL: string | null;
+          sourceCodeURL: string | null;
+        }>;
+      }
+    ).getBySlug({
+      slug: params.slug,
+    });
+
+    const organization: OrganizationWithMetadata = {
+      ...fullOrganization.data,
+      references: {
+        webUrl: organizationMetadata.url ?? null,
+        xUrl: organizationMetadata.xURL ?? null,
+        linkedinUrl: organizationMetadata.linkedinURL ?? null,
+        sourceCodeUrl: organizationMetadata.sourceCodeURL ?? null,
+      },
+    };
+
     // Check if current user is owner
     const isOwner = organization.members?.some(
-      (member) => member.userId === session.user.id && member.role === "owner"
+      (member: { userId: string; role: string }) =>
+        member.userId === session.user.id && member.role === "owner"
     );
 
     if (!isOwner) {
@@ -70,16 +86,13 @@ export const Route = createFileRoute("/dashboard/products/$slug/edit")({
   component: RouteComponent,
 });
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Necessary for edit form logic
 function RouteComponent() {
   const { organization } = Route.useLoaderData();
   const router = useRouter();
 
   // Track existing URLs and which gallery URLs should be removed
-  const initialLogoUrl =
-    (organization as { logo?: string | null })?.logo ?? null;
-  const initialGalleryUrls =
-    (organization as { gallery?: string[] | null })?.gallery ?? [];
+  const initialLogoUrl = getOrganizationLogo(organization);
+  const initialGalleryUrls = getOrganizationGallery(organization);
 
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(
     initialLogoUrl
@@ -89,32 +102,36 @@ function RouteComponent() {
     new Set()
   );
 
-  const syncMetadataMutation = useMutation({
-    ...orpc.products.syncOrganizationMetadata.mutationOptions(),
-  });
-
-  // Infer a defined type on the organization to prevent type errors
-  const betterOrg = organization as typeof organization & {
-    isDev: boolean;
-    releaseDate: Date;
-    isListed: boolean;
-    tagline: string;
-    description: string;
-    category: string[];
-    isOpenSource: boolean;
-    gallery: string[];
-    logo: string | null;
-  };
-
-  // Helper to determine final logo URL
-  function getLogoUrl(data: ProductFormData): string | undefined {
-    if (data.media.logoUrls && data.media.logoUrls.length > 0) {
-      return data.media.logoUrls[0];
-    }
-    return currentLogoUrl ?? undefined;
+  interface SyncMetadataPayload {
+    organizationId: string;
+    url?: string;
+    xUrl?: string;
+    linkedinUrl?: string;
+    sourceCodeUrl?: string;
+    releaseDateMs?: number;
   }
 
-  // Helper to merge gallery URLs
+  const syncMetadataMutation = useMutation({
+    mutationFn: async (payload: SyncMetadataPayload) =>
+      (
+        client.products as {
+          syncOrganizationMetadata: (
+            payload: SyncMetadataPayload
+          ) => Promise<{ success: boolean }>;
+        }
+      ).syncOrganizationMetadata(payload),
+  });
+
+  /**
+   * Determine final logo URL from form data or current logo
+   */
+  function getLogoUrl(data: ProductFormData): string | undefined {
+    return data.media.logoUrls?.[0] ?? currentLogoUrl ?? undefined;
+  }
+
+  /**
+   * Merge existing gallery URLs (excluding removed ones) with new URLs from form
+   */
   function getGalleryUrls(data: ProductFormData): string[] {
     const existingUrls = currentGalleryUrls.filter(
       (url) => !removedGalleryUrls.has(url)
@@ -123,25 +140,52 @@ function RouteComponent() {
     return [...existingUrls, ...newGalleryUrls];
   }
 
+  /**
+   * Build metadata sync payload with only valid URLs and release date
+   */
+  function buildMetadataPayload(
+    organizationId: string,
+    data: ProductFormData
+  ): SyncMetadataPayload {
+    return {
+      organizationId,
+      ...(data.getStarted.url && { url: data.getStarted.url }),
+      ...(data.productInformation.xUrl && {
+        xUrl: data.productInformation.xUrl,
+      }),
+      ...(data.productInformation.linkedinUrl && {
+        linkedinUrl: data.productInformation.linkedinUrl,
+      }),
+      ...(data.productInformation.sourceCodeUrl && {
+        sourceCodeUrl: data.productInformation.sourceCodeUrl,
+      }),
+      ...(data.getStarted.releaseDate && {
+        releaseDateMs: data.getStarted.releaseDate.getTime(),
+      }),
+    };
+  }
+
   // Transform organization data to form format
   const initialValues: Partial<ProductFormData> = {
     getStarted: {
-      url: betterOrg?.references?.webUrl ?? "",
-      isDev: betterOrg?.isDev ?? false,
-      releaseDate: betterOrg?.releaseDate
-        ? new Date(betterOrg.releaseDate)
+      url: organization.references?.webUrl ?? "",
+      isDev: organization.isDev ?? false,
+      releaseDate: organization.releaseDate
+        ? new Date(organization.releaseDate)
         : undefined,
-      isListed: betterOrg?.isListed ?? false,
+      isListed: organization.isListed ?? false,
     },
     productInformation: {
-      name: betterOrg?.name ?? "",
-      tagline: betterOrg?.tagline ?? "",
-      description: betterOrg?.description ?? "",
-      category: betterOrg?.category ?? [],
-      xUrl: betterOrg?.references?.xUrl ?? "",
-      linkedinUrl: betterOrg?.references?.linkedinUrl ?? "",
-      isOpenSource: betterOrg?.isOpenSource ?? false,
-      sourceCodeUrl: betterOrg?.references?.sourceCodeUrl ?? "",
+      name: organization.name ?? "",
+      tagline: organization.tagline ?? "",
+      description: organization.description ?? "",
+      category: Array.isArray(organization.category)
+        ? organization.category
+        : [],
+      xUrl: organization.references?.xUrl ?? "",
+      linkedinUrl: organization.references?.linkedinUrl ?? "",
+      isOpenSource: organization.isOpenSource ?? false,
+      sourceCodeUrl: organization.references?.sourceCodeUrl ?? "",
     },
     media: {
       logo: [], // Empty initially - user can add new file
@@ -168,7 +212,7 @@ function RouteComponent() {
     const updateData: Record<string, unknown> = {};
     if (data.productInformation.name) {
       updateData.name = data.productInformation.name;
-      if (data.productInformation.name !== organization?.name) {
+      if (data.productInformation.name !== organization.name) {
         updateData.slug = slugify(data.productInformation.name);
       }
     }
@@ -201,7 +245,7 @@ function RouteComponent() {
       // Update organization fields (including logo and gallery)
       await authClient.organization.update(
         {
-          organizationId: organization?.id ?? "",
+          organizationId: organization.id,
           data: updateData,
         },
         {
@@ -216,24 +260,15 @@ function RouteComponent() {
       );
 
       // Sync URLs and release date to separate table
-      await syncMetadataMutation.mutateAsync({
-        organizationId: organization?.id ?? "",
-        // Only send valid URLs; omit empty strings so Zod url() passes
-        url: data.getStarted.url || undefined,
-        xUrl: data.productInformation.xUrl || undefined,
-        linkedinUrl: data.productInformation.linkedinUrl || undefined,
-        sourceCodeUrl: data.productInformation.sourceCodeUrl || undefined,
-        releaseDateMs: data.getStarted.releaseDate
-          ? data.getStarted.releaseDate.getTime()
-          : undefined,
-      });
+      const metadataPayload = buildMetadataPayload(organization.id, data);
+      await syncMetadataMutation.mutateAsync(metadataPayload);
 
       toast.success("Product updated successfully");
       router.navigate({
         to: "/dashboard/products/$slug",
-        params: { slug: organization?.slug ?? "" },
+        params: { slug: organization.slug ?? "" },
       });
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update product");
     }
   }
@@ -241,7 +276,7 @@ function RouteComponent() {
   function handleCancel() {
     router.navigate({
       to: "/dashboard/products/$slug",
-      params: { slug: organization?.slug ?? "" },
+      params: { slug: organization.slug ?? "" },
     });
   }
 

@@ -192,23 +192,7 @@ function RouteComponent() {
           {/* Subtle grid lines background */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0 select-none"
-            style={{
-              backgroundImage: `
-                linear-gradient(
-                  to right,
-                  var(--tw-bg-primary, theme(bgColor.primary)) 1px,
-                  transparent 1px
-                ),
-                linear-gradient(
-                  to bottom,
-                  var(--tw-bg-primary, theme(bgColor.primary)) 1px,
-                  transparent 1px
-                )
-              `,
-              backgroundSize: "40px 40px",
-              opacity: 0.05,
-            }}
+            className="pointer-events-none absolute inset-0 z-0 select-none bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] opacity-5 [background-size:40px_40px]"
           />
           <h1 className="relative z-10 text-center font-bold text-2xl sm:text-4xl">
             &bull; Explore Products &bull;

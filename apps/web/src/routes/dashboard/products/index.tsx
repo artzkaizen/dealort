@@ -26,6 +26,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { authClient } from "@/lib/auth-client";
+import {
+  filterNonNullOrganizations,
+  getOrganizationCategory,
+  getOrganizationLogo,
+  getOrganizationReleaseDate,
+  getOrganizationTagline,
+  isOrganizationListed,
+} from "@/lib/organization-utils";
 
 export const Route = createFileRoute("/dashboard/products/")({
   component: RouteComponent,
@@ -37,9 +45,7 @@ function RouteComponent() {
   const { data: organizations } = authClient.useListOrganizations();
   const [currentPage, setCurrentPage] = useState(1);
 
-  const removeNullOrganizations = organizations?.filter(
-    (organization) => organization !== null
-  );
+  const removeNullOrganizations = filterNonNullOrganizations(organizations);
 
   // Calculate pagination
   const totalPages = Math.ceil(
@@ -81,151 +87,176 @@ function RouteComponent() {
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {paginatedOrganizations.map((organization) => (
-                <Card className="gap-1 p-0" key={organization.id}>
-                  <CardHeader className="flex flex-row gap-2 px-2 py-2">
-                    <Avatar className="size-10">
-                      <AvatarImage src={organization.logo ?? ""} />
-                      <AvatarFallback>
-                        {organization.name?.charAt(0) ?? ""}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex flex-col gap-1">
-                      <div className="flex flex-row gap-2">
-                        <h2 className="font-semibold text-sm">
-                          {organization.name}
-                        </h2>
-
-                        <Badge
-                          className="size-fit text-[10px]"
-                          variant={
-                            organization.isListed ? "default" : "secondary"
-                          }
-                        >
-                          {organization.isListed ? "Listed" : "Not Listed"}
-                        </Badge>
-                      </div>
-                      <p className="text-muted-foreground text-xs">
-                        {"tagline" in organization
-                          ? (organization as { tagline?: string }).tagline
-                          : ""}
-                      </p>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="flex flex-wrap gap-1 px-2 py-0">
-                    {"category" in organization &&
-                      Array.isArray(
-                        (organization as { category?: string[] }).category
-                      ) &&
-                      (organization as { category: string[] }).category.map(
-                        (category: string) => (
-                          <Badge key={category} variant="secondary">
-                            {category}
-                          </Badge>
-                        )
-                      )}
-                  </CardContent>
-
-                  <CardFooter className="flex flex-wrap items-end justify-between gap-2 border-t px-2 pt-0 pb-2">
-                    <div className="item-start flex flex-col gap-1">
-                      {organization.releaseDate && (
-                        <p className="flex items-center gap-1 text-muted-foreground text-xs">
-                          <RocketIcon className="size-4" />
-                          {format(
-                            new Date(organization.releaseDate),
-                            "MMM d, yyyy"
-                          )}
-                        </p>
-                      )}
-                      <p className="flex items-center gap-1 text-muted-foreground text-xs">
-                        <CalendarIcon className="size-4" />
-                        {format(
-                          new Date(organization.createdAt),
-                          "MMM d, yyyy"
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-1">
-                      <Popover>
-                        <PopoverTrigger>
-                          <EllipsisIcon />
-                        </PopoverTrigger>
-
-                        <PopoverContent className="flex size-fit flex-col overflow-hidden p-0 *:rounded-none *:text-xs">
-                          {organization.isListed && (
-                            <Button
-                              aria-label="View Product Public Page"
-                              asChild
-                              variant="secondary"
-                            >
-                              <a
-                                href={`/products/${organization.slug}`}
-                                rel="noopener noreferrer"
-                                target="_blank"
-                              >
-                                <EyeIcon className="size-4" /> View Public Page
-                              </a>
-                            </Button>
-                          )}
-
-                          <Button
-                            aria-label="Full details"
-                            asChild
-                            variant="default"
-                          >
-                            <Link
-                              params={{ slug: organization.slug ?? "" }}
-                              to="/dashboard/products/$slug"
-                            >
-                              <ListIcon className="size-4" /> Full details
-                            </Link>
-                          </Button>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </CardFooter>
-                </Card>
+                <ProductCard
+                  key={organization.id}
+                  organization={organization}
+                />
               ))}
             </div>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between border-t pt-4">
-                <div className="flex-1 text-muted-foreground text-sm max-lg:hidden">
-                  Showing {startIndex + 1} to{" "}
-                  {Math.min(endIndex, removeNullOrganizations.length)} of{" "}
-                  {removeNullOrganizations.length} products
-                </div>
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    disabled={currentPage === 1}
-                    onClick={handlePreviousPage}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <ChevronLeft className="size-4" />
-                    <span className="hidden md:inline">Previous</span>
-                  </Button>
-                  <div className="text-muted-foreground text-sm">
-                    {currentPage} of {totalPages}
-                  </div>
-                  <Button
-                    disabled={currentPage === totalPages}
-                    onClick={handleNextPage}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <span className="hidden md:inline">Next</span>
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
-              </div>
+              <PaginationControls
+                currentPage={currentPage}
+                endIndex={endIndex}
+                handleNextPage={handleNextPage}
+                handlePreviousPage={handlePreviousPage}
+                startIndex={startIndex}
+                totalItems={removeNullOrganizations.length}
+                totalPages={totalPages}
+              />
             )}
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+interface ProductCardProps {
+  organization: NonNullable<
+    ReturnType<typeof authClient.useListOrganizations>["data"]
+  >[number];
+}
+
+function ProductCard({ organization }: ProductCardProps) {
+  const logo = getOrganizationLogo(organization);
+  const tagline = getOrganizationTagline(organization);
+  const categories = getOrganizationCategory(organization);
+  const releaseDate = getOrganizationReleaseDate(organization);
+  const isListed = isOrganizationListed(organization);
+
+  return (
+    <Card className="gap-1 p-0">
+      <CardHeader className="flex flex-row gap-2 px-2 py-2">
+        <Avatar className="size-10">
+          <AvatarImage src={logo ?? ""} />
+          <AvatarFallback>{organization.name?.charAt(0) ?? ""}</AvatarFallback>
+        </Avatar>
+
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-row gap-2">
+            <h2 className="font-semibold text-sm">{organization.name}</h2>
+
+            <Badge
+              className="size-fit text-[10px]"
+              variant={isListed ? "default" : "secondary"}
+            >
+              {isListed ? "Listed" : "Not Listed"}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-xs">{tagline}</p>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex flex-wrap gap-1 px-2 py-0">
+        {categories.map((category) => (
+          <Badge key={category} variant="secondary">
+            {category}
+          </Badge>
+        ))}
+      </CardContent>
+
+      <CardFooter className="flex flex-wrap items-end justify-between gap-2 border-t px-2 pt-0 pb-2">
+        <div className="item-start flex flex-col gap-1">
+          {releaseDate && (
+            <p className="flex items-center gap-1 text-muted-foreground text-xs">
+              <RocketIcon className="size-4" />
+              {format(releaseDate, "MMM d, yyyy")}
+            </p>
+          )}
+          <p className="flex items-center gap-1 text-muted-foreground text-xs">
+            <CalendarIcon className="size-4" />
+            {format(new Date(organization.createdAt), "MMM d, yyyy")}
+          </p>
+        </div>
+
+        <div className="flex gap-1">
+          <Popover>
+            <PopoverTrigger>
+              <EllipsisIcon />
+            </PopoverTrigger>
+
+            <PopoverContent className="flex size-fit flex-col overflow-hidden p-0 *:rounded-none *:text-xs">
+              {isListed && (
+                <Button
+                  aria-label="View Product Public Page"
+                  asChild
+                  variant="secondary"
+                >
+                  <a
+                    href={`/products/${organization.slug}`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <EyeIcon className="size-4" /> View Public Page
+                  </a>
+                </Button>
+              )}
+
+              <Button aria-label="Full details" asChild variant="default">
+                <Link
+                  params={{ slug: organization.slug ?? "" }}
+                  to="/dashboard/products/$slug"
+                >
+                  <ListIcon className="size-4" /> Full details
+                </Link>
+              </Button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+interface PaginationControlsProps {
+  currentPage: number;
+  endIndex: number;
+  handleNextPage: () => void;
+  handlePreviousPage: () => void;
+  startIndex: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+function PaginationControls({
+  currentPage,
+  endIndex,
+  handleNextPage,
+  handlePreviousPage,
+  startIndex,
+  totalItems,
+  totalPages,
+}: PaginationControlsProps) {
+  return (
+    <div className="mt-6 flex items-center justify-between border-t pt-4">
+      <div className="flex-1 text-muted-foreground text-sm max-lg:hidden">
+        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{" "}
+        {totalItems} products
+      </div>
+      <div className="flex items-center justify-center gap-4">
+        <Button
+          disabled={currentPage === 1}
+          onClick={handlePreviousPage}
+          size="sm"
+          variant="outline"
+        >
+          <ChevronLeft className="size-4" />
+          <span className="hidden md:inline">Previous</span>
+        </Button>
+        <div className="text-muted-foreground text-sm">
+          {currentPage} of {totalPages}
+        </div>
+        <Button
+          disabled={currentPage === totalPages}
+          onClick={handleNextPage}
+          size="sm"
+          variant="outline"
+        >
+          <span className="hidden md:inline">Next</span>
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
     </div>
   );
 }

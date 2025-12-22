@@ -7,18 +7,103 @@ import {
 } from "@/components/dashboard/product-form";
 import { authClient } from "@/lib/auth-client";
 import { slugify } from "@/lib/utils";
-import { orpc } from "@/utils/orpc";
+import { client } from "@/utils/orpc";
 
 export const Route = createFileRoute("/dashboard/products/new")({
   component: RouteComponent,
 });
 
+interface SyncMetadataPayload {
+  organizationId: string;
+  url?: string;
+  xUrl?: string;
+  linkedinUrl?: string;
+  sourceCodeUrl?: string;
+}
+
 function RouteComponent() {
   const router = useRouter();
 
   const syncMetadataMutation = useMutation({
-    ...orpc.products.syncOrganizationMetadata.mutationOptions(),
+    mutationFn: async (payload: SyncMetadataPayload) =>
+      (
+        client.products as {
+          syncOrganizationMetadata: (
+            payload: SyncMetadataPayload
+          ) => Promise<{ success: boolean }>;
+        }
+      ).syncOrganizationMetadata(payload),
   });
+
+  /**
+   * Extract media URLs from form data
+   */
+  function extractMediaUrls(data: ProductFormData): {
+    logoUrl: string | undefined;
+    galleryUrls: string[];
+  } {
+    const logoUrl =
+      data.media.logoUrls && data.media.logoUrls.length > 0
+        ? data.media.logoUrls[0]
+        : undefined;
+    const galleryUrls =
+      data.media.galleryUrls && data.media.galleryUrls.length > 0
+        ? data.media.galleryUrls
+        : [];
+
+    return { logoUrl, galleryUrls };
+  }
+
+  /**
+   * Build organization create payload
+   */
+  function buildCreatePayload(
+    data: ProductFormData,
+    slug: string,
+    logoUrl: string | undefined,
+    galleryUrls: string[]
+  ) {
+    return {
+      name: data.productInformation.name,
+      slug,
+      isDev: Boolean(data.getStarted.isDev),
+      tagline: data.productInformation.tagline,
+      category: Array.isArray(data.productInformation.category)
+        ? data.productInformation.category
+        : [],
+      isOpenSource: Boolean(data.productInformation.isOpenSource),
+      rating: 0,
+      impressions: 0,
+      isListed: Boolean(data.getStarted.isListed),
+      ...(data.productInformation.description && {
+        description: data.productInformation.description,
+      }),
+      ...(logoUrl && { logo: logoUrl }),
+      ...(galleryUrls.length > 0 && { gallery: galleryUrls }),
+      ...(data.getStarted.releaseDate && {
+        releaseDate: new Date(data.getStarted.releaseDate).getTime(),
+      }),
+    };
+  }
+
+  /**
+   * Build metadata sync payload with only valid URLs
+   */
+  function buildMetadataPayload(organizationId: string, data: ProductFormData) {
+    return {
+      organizationId,
+      ...(data.getStarted.url && { url: data.getStarted.url }),
+      ...(data.productInformation.xUrl && {
+        xUrl: data.productInformation.xUrl,
+      }),
+      ...(data.productInformation.linkedinUrl && {
+        linkedinUrl: data.productInformation.linkedinUrl,
+      }),
+      ...(data.productInformation.sourceCodeUrl && {
+        sourceCodeUrl: data.productInformation.sourceCodeUrl,
+      }),
+    };
+  }
 
   async function handleSubmit(data: ProductFormData) {
     if (data.media.logo.length === 0) {
@@ -29,73 +114,27 @@ function RouteComponent() {
     const slug = slugify(data.productInformation.name);
 
     try {
-      // Upload files first
-      let logoUrl: string | undefined;
-      let galleryUrls: string[] = [];
-
-      if (data.media.logoUrls && data.media.logoUrls.length > 0) {
-        logoUrl = data.media.logoUrls[0];
-      }
-
-      if (data.media.galleryUrls && data.media.galleryUrls.length > 0) {
-        galleryUrls = data.media.galleryUrls;
-      }
-
-      // Build the create payload matching BetterAuth schema exactly
-      const createPayload: Record<string, unknown> = {
-        name: data.productInformation.name,
+      const { logoUrl, galleryUrls } = extractMediaUrls(data);
+      const createPayload = buildCreatePayload(
+        data,
         slug,
-        isDev: Boolean(data.getStarted.isDev),
-        tagline: data.productInformation.tagline,
-        category: Array.isArray(data.productInformation.category)
-          ? data.productInformation.category
-          : [],
-        isOpenSource: Boolean(data.productInformation.isOpenSource),
-        rating: 0,
-        impressions: 0,
-        isListed: Boolean(data.getStarted.isListed),
-      };
-
-      // Only add optional fields if they have values (BetterAuth may reject empty strings for optional fields)
-      if (data.productInformation.description) {
-        createPayload.description = data.productInformation.description;
-      }
-      if (logoUrl) {
-        createPayload.logo = logoUrl;
-      }
-      if (galleryUrls.length > 0) {
-        createPayload.gallery = galleryUrls;
-      }
-      // BetterAuth date type expects ISO string format
-      // if (data.getStarted.releaseDate) {
-      //   createPayload.releaseDate = new Date(
-      //     data.getStarted.releaseDate
-      //   ).getTime();
-      // }
-
-      const result = await authClient.organization.create(
-        createPayload as Parameters<typeof authClient.organization.create>[0],
-        {
-          onError: (error) => {
-            toast.error(
-              error.error?.message ||
-                error.error?.statusText ||
-                "Failed to create product"
-            );
-          },
-        }
+        logoUrl,
+        galleryUrls
       );
 
+      const result = await authClient.organization.create(createPayload, {
+        onError: (error) => {
+          toast.error(
+            error.error?.message ||
+              error.error?.statusText ||
+              "Failed to create product"
+          );
+        },
+      });
+
       if (result.data?.id) {
-        // Sync URLs to separate table
-        await syncMetadataMutation.mutateAsync({
-          organizationId: result.data.id,
-          // Only send valid URLs; omit empty strings so Zod url() passes
-          url: data.getStarted.url || undefined,
-          xUrl: data.productInformation.xUrl || undefined,
-          linkedinUrl: data.productInformation.linkedinUrl || undefined,
-          sourceCodeUrl: data.productInformation.sourceCodeUrl || undefined,
-        });
+        const metadataPayload = buildMetadataPayload(result.data.id, data);
+        await syncMetadataMutation.mutateAsync(metadataPayload);
 
         toast.success("Product created successfully");
         router.navigate({
@@ -103,7 +142,7 @@ function RouteComponent() {
           params: { slug },
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create product");
     }
   }

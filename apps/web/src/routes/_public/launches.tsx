@@ -197,6 +197,10 @@ function RouteComponent() {
     <main>
       <section className="relative min-h-[40vh]">
         <div className="relative z-10 flex flex-col items-center justify-center py-10">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0 select-none bg-[linear-gradient(to_right,var(--color-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-primary)_1px,transparent_1px)] opacity-5 [background-size:40px_40px]"
+          />
           <h1 className="text-center font-bold text-2xl sm:text-4xl">
             &bull; Product Launches &bull;
           </h1>
