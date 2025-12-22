@@ -187,88 +187,6 @@ const getStartedFormBase = z.object({
   isListed: z.boolean(),
 });
 
-const productInformationFormBase = z
-  .object({
-    name: z
-      .string()
-      .min(1, "Type product name")
-      .max(40, "Product name is too long"),
-    tagline: z.string().min(1, "Type tagline").max(60, "Tagline is too long"),
-    description: z
-      .string()
-      .min(1, "Type description")
-      .max(600, "Description cannot exceed 600 characters"),
-    category: z.array(z.string()).min(1, "Please select at least one category"),
-    xUrl: z
-      .string()
-      .refine((val) => !PROTOCOL_REGEX.test(val), {
-        message:
-          "Please enter only the username (e.g., username) and not the full URL.",
-      })
-      .transform((val) => {
-        if (!val) {
-          return val;
-        }
-        return `https://x.com/${val}`;
-      })
-      .pipe(z.url("Please input a valid X/Twitter username."))
-      .refine((val) => !val || X_URL_REGEX.test(val), {
-        message: "Please enter a valid X/Twitter username format.",
-      }),
-    linkedinUrl: z
-      .string()
-      .refine((val) => !PROTOCOL_REGEX.test(val), {
-        message:
-          "Please enter only the company path (e.g., company-name) and not the full URL.",
-      })
-      .transform((val) => {
-        if (!val) {
-          return val;
-        }
-        return `https://www.linkedin.com/company/${val}`;
-      })
-      .pipe(z.url("Please enter a valid LinkedIn company path."))
-      .or(z.literal("")),
-    isOpenSource: z.boolean(),
-    sourceCodeUrl: z
-      .string()
-      .refine((val) => !(val && PROTOCOL_REGEX.test(val)), {
-        message:
-          "Please enter only the domain and path (e.g., github.com/user/repo), not a full URL starting with https://.",
-      })
-      .transform((val) => {
-        if (!val) {
-          return val;
-        }
-        return `https://${val}`;
-      })
-      .pipe(
-        z.union([
-          z.literal(""),
-          z.url({
-            message: "Please enter a valid source code URL.",
-          }),
-        ])
-      )
-      .refine((val) => !val || URL_REGEX.test(val), {
-        message:
-          "Please enter a valid source code link (must include domain and path).",
-      })
-      .optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.isOpenSource) {
-        return !!data.sourceCodeUrl && data.sourceCodeUrl !== "";
-      }
-      return true;
-    },
-    {
-      message: "Source code link is required if the product is open source.",
-      path: ["sourceCodeUrl"],
-    }
-  );
-
 const mediaFormBase = z.object({
   logo: z
     .array(z.custom<File>())
@@ -703,6 +621,89 @@ function getFilesUrls(files: File[] = []) {
   return files.map((f) => URL.createObjectURL(f));
 }
 
+// Helper function to render logo section
+function renderLogoSection(
+  logoUrl: string | null,
+  productName: string | undefined,
+  isUploadingLogo: boolean,
+  uploadProgressLogo: number
+) {
+  return (
+    <Avatar className="size-16 shrink-0">
+      {isUploadingLogo ? (
+        <Skeleton className="size-full">
+          <CircularProgress className="size-full" value={uploadProgressLogo}>
+            <CircularProgressIndicator>
+              <CircularProgressTrack />
+              <CircularProgressRange />
+            </CircularProgressIndicator>
+          </CircularProgress>
+        </Skeleton>
+      ) : (
+        <>
+          <AvatarImage alt={productName || "Logo"} src={logoUrl ?? ""} />
+          <AvatarFallback>
+            {(productName || "L").charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </>
+      )}
+    </Avatar>
+  );
+}
+
+// Helper function to render social links
+function renderSocialLinks(
+  productInfo: PreviewProps["values"]["productInformation"]
+) {
+  if (
+    !(
+      productInfo?.xUrl ||
+      productInfo?.linkedinUrl ||
+      productInfo?.sourceCodeUrl
+    )
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="border-b pb-4">
+      <h4 className="mb-2 font-semibold text-sm">Links</h4>
+      <div className="flex flex-col gap-2">
+        {productInfo.xUrl && (
+          <a
+            className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+            href={`https://x.com/${productInfo.xUrl.toLowerCase()}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            X (Twitter) <ExternalLinkIcon className="size-3" />
+          </a>
+        )}
+        {productInfo.linkedinUrl && (
+          <a
+            className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+            href={`https://www.linkedin.com/company/${productInfo.linkedinUrl.toLowerCase()}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            LinkedIn <ExternalLinkIcon className="size-3" />
+          </a>
+        )}
+        {productInfo.sourceCodeUrl && (
+          <a
+            className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+            href={`https://${productInfo.sourceCodeUrl.toLowerCase()}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Source Code <ExternalLinkIcon className="size-3" />
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ProductPreview({
   values,
   isUploadingLogo,
@@ -725,31 +726,12 @@ function ProductPreview({
       {/* Logo and Basic Info */}
       <div className="flex justify-between">
         <div className="flex items-center gap-3 border-b pb-4">
-          <Avatar className="size-16 shrink-0">
-            {isUploadingLogo ? (
-              <Skeleton className="size-full">
-                <CircularProgress
-                  className="size-full"
-                  value={uploadProgressLogo}
-                >
-                  <CircularProgressIndicator>
-                    <CircularProgressTrack />
-                    <CircularProgressRange />
-                  </CircularProgressIndicator>
-                </CircularProgress>
-              </Skeleton>
-            ) : (
-              <>
-                <AvatarImage
-                  alt={productInfo?.name || "Logo"}
-                  src={logoUrl ?? ""}
-                />
-                <AvatarFallback>
-                  {(productInfo?.name || "L").charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </>
-            )}
-          </Avatar>
+          {renderLogoSection(
+            logoUrl,
+            productInfo?.name,
+            isUploadingLogo,
+            uploadProgressLogo
+          )}
           <div className="flex flex-col gap-1">
             <h3 className="font-semibold text-lg">
               {productInfo?.name || (
@@ -810,45 +792,7 @@ function ProductPreview({
       )}
 
       {/* Social Links */}
-      {(productInfo?.xUrl ||
-        productInfo?.linkedinUrl ||
-        productInfo?.sourceCodeUrl) && (
-        <div className="border-b pb-4">
-          <h4 className="mb-2 font-semibold text-sm">Links</h4>
-          <div className="flex flex-col gap-2">
-            {productInfo.xUrl && (
-              <a
-                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                href={`https://x.com/${productInfo.xUrl.toLowerCase()}`}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                X (Twitter) <ExternalLinkIcon className="size-3" />
-              </a>
-            )}
-            {productInfo.linkedinUrl && (
-              <a
-                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                href={`https://www.linkedin.com/company/${productInfo.linkedinUrl.toLowerCase()}`}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                LinkedIn <ExternalLinkIcon className="size-3" />
-              </a>
-            )}
-            {productInfo.sourceCodeUrl && (
-              <a
-                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                href={`https://${productInfo.sourceCodeUrl.toLowerCase()}`}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Source Code <ExternalLinkIcon className="size-3" />
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      {renderSocialLinks(productInfo)}
 
       {/* Product Details */}
       <div className="border-b pb-4">
@@ -967,75 +911,76 @@ export function ProductForm({
 
   type FormData = z.infer<typeof productFormSchema>;
 
-  // Transform initial values for edit mode
-  const getDefaultValues = (): FormData => {
-    if (mode === "edit" && initialValues) {
+  // Helper function to transform URL by removing protocol
+  const removeProtocol = (url: string, prefix: string): string => {
+    if (!url) return "";
+    return url.replace(prefix, "");
+  };
+
+  // Helper function to get default getStarted values
+  const getDefaultGetStarted = () => {
+    if (mode === "edit" && initialValues?.getStarted) {
       return {
-        getStarted: {
-          url: initialValues.getStarted?.url
-            ? initialValues.getStarted.url.replace("https://", "")
-            : "",
-          isDev: initialValues.getStarted?.isDev ?? false,
-          releaseDate: initialValues.getStarted?.releaseDate
-            ? new Date(initialValues.getStarted.releaseDate)
-            : undefined,
-          isListed: initialValues.getStarted?.isListed ?? false,
-        },
-        productInformation: {
-          name: initialValues.productInformation?.name ?? "",
-          tagline: initialValues.productInformation?.tagline ?? "",
-          description: initialValues.productInformation?.description ?? "",
-          category: initialValues.productInformation?.category ?? [],
-          xUrl: initialValues.productInformation?.xUrl
-            ? initialValues.productInformation.xUrl.replace(
-                "https://x.com/",
-                ""
-              )
-            : "",
-          linkedinUrl: initialValues.productInformation?.linkedinUrl
-            ? initialValues.productInformation.linkedinUrl.replace(
-                "https://www.linkedin.com/company/",
-                ""
-              )
-            : "",
-          isOpenSource: initialValues.productInformation?.isOpenSource ?? false,
-          sourceCodeUrl: initialValues.productInformation?.sourceCodeUrl
-            ? initialValues.productInformation.sourceCodeUrl.replace(
-                "https://",
-                ""
-              )
-            : "",
-        },
-        media: {
-          logo: initialValues.media?.logo ?? [],
-          gallery: initialValues.media?.gallery ?? [],
-        },
+        url: removeProtocol(initialValues.getStarted.url || "", "https://"),
+        isDev: initialValues.getStarted.isDev ?? false,
+        releaseDate: initialValues.getStarted.releaseDate
+          ? new Date(initialValues.getStarted.releaseDate)
+          : undefined,
+        isListed: initialValues.getStarted.isListed ?? false,
       };
     }
-
     return {
-      getStarted: {
-        url: "",
-        isDev: false,
-        releaseDate: undefined,
-        isListed: false,
-      },
-      productInformation: {
-        name: "",
-        tagline: "",
-        description: "",
-        category: [],
-        xUrl: "",
-        linkedinUrl: "",
-        isOpenSource: false,
-        sourceCodeUrl: "",
-      },
-      media: {
-        logo: [],
-        gallery: [],
-      },
+      url: "",
+      isDev: false,
+      releaseDate: undefined,
+      isListed: false,
     };
   };
+
+  // Helper function to get default productInformation values
+  const getDefaultProductInformation = () => {
+    if (mode === "edit" && initialValues?.productInformation) {
+      return {
+        name: initialValues.productInformation.name ?? "",
+        tagline: initialValues.productInformation.tagline ?? "",
+        description: initialValues.productInformation.description ?? "",
+        category: initialValues.productInformation.category ?? [],
+        xUrl: removeProtocol(
+          initialValues.productInformation.xUrl || "",
+          "https://x.com/"
+        ),
+        linkedinUrl: removeProtocol(
+          initialValues.productInformation.linkedinUrl || "",
+          "https://www.linkedin.com/company/"
+        ),
+        isOpenSource: initialValues.productInformation.isOpenSource ?? false,
+        sourceCodeUrl: removeProtocol(
+          initialValues.productInformation.sourceCodeUrl || "",
+          "https://"
+        ),
+      };
+    }
+    return {
+      name: "",
+      tagline: "",
+      description: "",
+      category: [],
+      xUrl: "",
+      linkedinUrl: "",
+      isOpenSource: false,
+      sourceCodeUrl: "",
+    };
+  };
+
+  // Transform initial values for edit mode
+  const getDefaultValues = (): FormData => ({
+    getStarted: getDefaultGetStarted(),
+    productInformation: getDefaultProductInformation(),
+    media: {
+      logo: initialValues?.media?.logo ?? [],
+      gallery: initialValues?.media?.gallery ?? [],
+    },
+  });
 
   const form = useForm<FormData>({
     defaultValues: getDefaultValues(),
@@ -1110,32 +1055,29 @@ export function ProductForm({
     [form, step]
   );
 
-  async function handleSubmit(data: FormData) {
-    if (mode === "new" && data.media.logo?.length === 0) {
-      toast.error("Please upload at least one logo");
-      return;
-    }
+  // Helper function to upload logo files
+  async function uploadLogoFiles(files: File[]): Promise<string[]> {
+    if (!files || files.length === 0) return [];
+    const logoResult = await logoUpload.startUpload(files);
+    return logoResult ? logoResult.map((r) => r.ufsUrl) : [];
+  }
 
-    // Upload files if provided
-    let logoUrls: string[] = [];
-    let galleryUrls: string[] = [];
+  // Helper function to upload gallery files
+  async function uploadGalleryFiles(
+    files: File[] | undefined
+  ): Promise<string[]> {
+    if (!files || files.length === 0) return [];
+    const galleryResult = await galleryUpload.startUpload(files);
+    return galleryResult ? galleryResult.map((r) => r.ufsUrl) : [];
+  }
 
-    if (data.media.logo && data.media.logo.length > 0) {
-      const logoResult = await logoUpload.startUpload(data.media.logo);
-      if (logoResult) {
-        logoUrls = logoResult.map((r) => r.ufsUrl);
-      }
-    }
-
-    if (data.media.gallery && data.media.gallery.length > 0) {
-      const galleryResult = await galleryUpload.startUpload(data.media.gallery);
-      if (galleryResult) {
-        galleryUrls = galleryResult.map((r) => r.ufsUrl);
-      }
-    }
-
-    // For edit mode, only include fields that have values
-    const submitData: ProductFormData = {
+  // Helper function to build submit data
+  function buildSubmitData(
+    data: FormData,
+    logoUrls: string[],
+    galleryUrls: string[]
+  ): ProductFormData {
+    return {
       getStarted: {
         url: data.getStarted.url || "",
         isDev: data.getStarted.isDev ?? false,
@@ -1159,7 +1101,21 @@ export function ProductForm({
         galleryUrls,
       },
     };
+  }
 
+  async function handleSubmit(data: FormData) {
+    if (mode === "new" && data.media.logo?.length === 0) {
+      toast.error("Please upload at least one logo");
+      return;
+    }
+
+    // Upload files if provided
+    const [logoUrls, galleryUrls] = await Promise.all([
+      uploadLogoFiles(data.media.logo || []),
+      uploadGalleryFiles(data.media.gallery),
+    ]);
+
+    const submitData = buildSubmitData(data, logoUrls, galleryUrls);
     await onSubmit(submitData);
   }
 
@@ -1650,7 +1606,7 @@ export function ProductForm({
                             </div>
                           </FileUploadDropzone>
                           {field.value?.map((file, index) => (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                            // biome-ignore lint/suspicious/noArrayIndexKey: File objects don't have stable IDs
                             <FileUploadItem key={index} value={file}>
                               <FileUploadItemPreview />
                               <FileUploadItemMetadata />
@@ -1728,7 +1684,7 @@ export function ProductForm({
                             </FileUploadDropzone>
                             <FileUploadList>
                               {field.value?.map((file, index) => (
-                                // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                                // biome-ignore lint/suspicious/noArrayIndexKey: File objects don't have stable IDs
                                 <FileUploadItem key={index} value={file}>
                                   <FileUploadItemPreview />
                                   <FileUploadItemMetadata />

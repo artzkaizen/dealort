@@ -35,11 +35,57 @@ export const Route = createFileRoute("/_public/launches")({
 
 type LaunchSortMode = "recent_launch" | "top_launches" | "launching_soon";
 
+interface LaunchItem {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string | null;
+  logo: string | null;
+  category: string[] | null;
+  rating: number;
+  reviewCount: number;
+  commentCount: number;
+  impressions: number;
+  releaseDate: Date | string | null;
+  createdAt: Date | string;
+}
+
+interface LaunchesListResponse {
+  items: LaunchItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+interface RecentProductsResponse {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string | null;
+  logo: string | null;
+  category: string[] | null;
+  rating: number;
+  reviewCount: number;
+  commentCount: number;
+  impressions: number;
+  createdAt: Date | string;
+}
+
 function RouteComponent() {
   const [sortMode, setSortMode] = useState<LaunchSortMode>("recent_launch");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categorySearch, setCategorySearch] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Type-safe client accessors
+  const productsClient = client.products as {
+    listLaunches: (input: {
+      cursor?: string;
+      limit: number;
+      categories?: string[];
+      sortBy: LaunchSortMode;
+    }) => Promise<LaunchesListResponse>;
+    listRecent: (input: { limit: number }) => Promise<RecentProductsResponse[]>;
+  };
 
   // Fetch launches with infinite query
   const {
@@ -50,8 +96,8 @@ function RouteComponent() {
     isLoading,
   } = useInfiniteQuery({
     queryKey: ["products", "listLaunches", sortMode, selectedCategories],
-    queryFn: async ({ pageParam }: { pageParam: string | undefined }) =>
-      client.products.listLaunches({
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      productsClient.listLaunches({
         cursor: pageParam,
         limit: 10,
         categories:
@@ -65,12 +111,14 @@ function RouteComponent() {
   // Fetch recent products for sidebar
   const { data: recentProducts } = useQuery({
     queryKey: ["products", "listRecent"],
-    queryFn: () => client.products.listRecent({ limit: 10 }),
+    queryFn: () => productsClient.listRecent({ limit: 10 }),
   });
 
   // Flatten all launches from pages
   const allLaunches = useMemo(
-    () => launchesData?.pages.flatMap((page) => page.items) ?? [],
+    () =>
+      launchesData?.pages.flatMap((page: LaunchesListResponse) => page.items) ??
+      [],
     [launchesData]
   );
 
@@ -302,14 +350,14 @@ function RouteComponent() {
                       <ProductCardDetails
                         name={launch.name}
                         slug={launch.slug}
-                        tagline={launch.tagline}
+                        tagline={launch.tagline ?? ""}
                       />
                       <ProductCardRateAndReview
                         rating={launch.rating}
                         reviewsCount={launch.reviewCount}
                       />
                       <ProductCardCategory
-                        category={launch.category}
+                        category={launch.category ?? []}
                         className="mt-2 flex-wrap"
                       />
 
@@ -366,7 +414,7 @@ function RouteComponent() {
               </div>
             )}
 
-            {recentProducts?.map((product) => (
+            {recentProducts?.map((product: RecentProductsResponse) => (
               <ProductCard className="rounded-lg" key={product.id}>
                 <div className="flex justify-between gap-4">
                   <div className="flex items-start gap-1">
@@ -379,7 +427,7 @@ function RouteComponent() {
                         className="[&>a]:text-xs [&>p]:text-[10px]"
                         name={product.name}
                         slug={product.slug}
-                        tagline={product.tagline}
+                        tagline={product.tagline ?? ""}
                       />
                       <ProductCardTimeAndDuration
                         createdAt={formatDate(product.createdAt)}

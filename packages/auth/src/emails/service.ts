@@ -6,6 +6,7 @@ import { InvitationEmail } from "./invitation";
 import { ResetPasswordEmail } from "./reset-password";
 import { SecurityWarningEmail } from "./security-warning";
 import { VerificationEmail } from "./verification";
+import { WaitlistConfirmationEmail } from "./waitlist-confirmation";
 import { WelcomeEmail } from "./welcome";
 
 const resend = new Resend(env.RESEND_API_KEY);
@@ -168,4 +169,21 @@ export async function sendInvitationEmail({
     "Invitation email sent"
   );
   return result;
+}
+
+export async function sendWaitlistConfirmationEmail({
+  to,
+  name,
+}: {
+  to: string;
+  name: string;
+}) {
+  const email = WaitlistConfirmationEmail({ name });
+  return await resend.emails.send({
+    from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+    to,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+  });
 }

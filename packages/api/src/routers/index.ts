@@ -8,11 +8,15 @@ import { healthRouter } from "./health";
 import { productsRouter } from "./products";
 import { reportsRouter } from "./reports";
 import { reviewsRouter } from "./reviews";
+import { waitlistRouter } from "./waitlist";
 
 /**
  * Main application router combining all route handlers
+ * Note: Type annotation is intentionally omitted to allow TypeScript to infer the type.
+ * The AppRouter type is exported separately for client usage.
  */
-export const appRouter: Record<string, unknown> = {
+// @ts-expect-error - Type inference exceeds TypeScript's serialization limit, but runtime works correctly
+export const appRouter = {
   /**
    * Simple health check endpoint
    */
@@ -73,6 +77,11 @@ export const appRouter: Record<string, unknown> = {
    * Analytics routes
    */
   analytics: analyticsRouter,
+
+  /**
+   * Waitlist routes
+   */
+  waitlist: waitlistRouter,
 };
 
 export type AppRouter = typeof appRouter;

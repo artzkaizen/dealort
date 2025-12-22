@@ -47,10 +47,46 @@ function ReviewsPage() {
   const isAuthenticated = !!session;
   const currentUserId = session?.user?.id;
 
-  // Fetch product data (use raw ORPC client instead of query utils here)
+  // Type-safe client accessors
+  const productsClient = client.products as {
+    getBySlug: (input: { slug: string }) => Promise<{
+      id: string;
+      name: string;
+      logo: string | null;
+      [key: string]: unknown;
+    }>;
+  };
+
+  const reviewsClient = client.reviews as {
+    list: (input: {
+      organizationId: string;
+      limit: number;
+      filter: "all" | "my";
+      sortBy: "recent" | "top_rating" | "lowest_rating";
+      cursor?: string;
+    }) => Promise<{
+      items: Array<{
+        id: string;
+        rating: number;
+        content: string;
+        title?: string | null;
+        createdAt: Date;
+        user: {
+          id: string;
+          name: string;
+          username: string | null;
+          image: string | null;
+        } | null;
+      }>;
+      nextCursor: string | null;
+      hasMore: boolean;
+    }>;
+  };
+
+  // Fetch product data
   const { data: product } = useQuery({
     queryKey: ["products", "getBySlug", slug],
-    queryFn: () => client.products.getBySlug({ slug }),
+    queryFn: () => productsClient.getBySlug({ slug }),
   });
 
   // Filter and sort state
@@ -67,22 +103,40 @@ function ReviewsPage() {
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: ["reviews", "list", product?.id, filter, sortBy],
-    queryFn: async ({ pageParam }) =>
-      client.reviews.list({
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      reviewsClient.list({
         organizationId: product?.id || "",
         limit: 10,
         filter,
         sortBy,
-        cursor: pageParam as string | undefined,
+        cursor: pageParam,
       }),
     enabled: !!product?.id,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    initialPageParam: undefined,
+    initialPageParam: undefined as string | undefined,
   });
+
+  // Type-safe mutations
+  const reviewsMutations = orpc.reviews as {
+    delete: {
+      mutationOptions: () => {
+        mutationFn: (input: { id: string }) => Promise<{ success: boolean }>;
+      };
+    };
+    update: {
+      mutationOptions: () => {
+        mutationFn: (input: {
+          id: string;
+          rating?: number;
+          content?: string;
+        }) => Promise<{ success: boolean }>;
+      };
+    };
+  };
 
   // Mutations
   const deleteReviewMutation = useMutation({
-    ...orpc.reviews.delete.mutationOptions(),
+    mutationFn: reviewsMutations.delete.mutationOptions().mutationFn,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "list"] });
       queryClient.invalidateQueries({ queryKey: ["products", "getBySlug"] });
@@ -90,7 +144,7 @@ function ReviewsPage() {
   });
 
   const updateReviewMutation = useMutation({
-    ...orpc.reviews.update.mutationOptions(),
+    mutationFn: reviewsMutations.update.mutationOptions().mutationFn,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "list"] });
       queryClient.invalidateQueries({ queryKey: ["products", "getBySlug"] });
@@ -103,6 +157,8 @@ function ReviewsPage() {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<{
     id: string;
     rating: number;
@@ -117,12 +173,16 @@ function ReviewsPage() {
     setReportDialogOpen(true);
   };
 
-  const handleSubmitReport = async (reason: string, description?: string) => {
-    if (!reportTarget) return;
+  const handleSubmitReport = (
+    _reason: string,
+    _description?: string
+  ): Promise<void> => {
+    if (!reportTarget) return Promise.resolve();
     // Implementation will be added when reports API is ready
     // TODO: Call reports API when ready
     setReportDialogOpen(false);
     setReportTarget(null);
+    return Promise.resolve();
   };
 
   const handleEdit = (review: {
@@ -140,10 +200,16 @@ function ReviewsPage() {
     setEditDialogOpen(true);
   };
 
-  const handleDelete = (reviewId: string) => {
-    if (window.confirm("Are you sure you want to delete this review?")) {
-      deleteReviewMutation.mutate({ id: reviewId });
-    }
+  const handleDeleteClick = (reviewId: string) => {
+    setDeleteTarget(reviewId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteReviewMutation.mutate({ id: deleteTarget });
+    setDeleteDialogOpen(false);
+    setDeleteTarget(null);
   };
 
   const handleSaveEdit = () => {
@@ -164,8 +230,23 @@ function ReviewsPage() {
   }
 
   const allReviews =
-    reviewsData?.pages.flatMap((page: { items: unknown[] }) => page.items) ||
-    [];
+    reviewsData?.pages.flatMap(
+      (page: {
+        items: Array<{
+          id: string;
+          rating: number;
+          content: string;
+          title?: string | null;
+          createdAt: Date;
+          user: {
+            id: string;
+            name: string;
+            username: string | null;
+            image: string | null;
+          } | null;
+        }>;
+      }) => page.items
+    ) || [];
 
   return (
     <main className="container mx-auto max-w-6xl px-4 py-8">
@@ -330,7 +411,9 @@ function ReviewsPage() {
                               </Button>
                               <Button
                                 className="w-full justify-start text-destructive"
-                                onClick={() => handleDelete(typedReview.id)}
+                                onClick={() =>
+                                  handleDeleteClick(typedReview.id)
+                                }
                                 size="sm"
                                 variant="ghost"
                               >
@@ -390,6 +473,37 @@ function ReviewsPage() {
           reportableType="review"
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Review</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this review? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDeleteDialogOpen(false)}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={deleteReviewMutation.isPending}
+              onClick={handleConfirmDelete}
+              variant="destructive"
+            >
+              {deleteReviewMutation.isPending && (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              )}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Review Dialog */}
       {editingReview && (

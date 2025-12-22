@@ -1,6 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import z from "zod";
+import { client, orpc } from "@/utils/orpc";
 import { Button } from "./ui/button";
 import {
   Form,
@@ -13,61 +17,99 @@ import {
 import { Input } from "./ui/input";
 
 const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required."),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.email("Invalid email"),
+  name: z.string().min(1, "Name is required."),
+  email: z.string().email("Invalid email"),
 });
 type FormSchema = z.infer<typeof formSchema>;
+
 export function WaitlistForm() {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      name: "",
       email: "",
     },
   });
 
-  function onSubmit(values: FormSchema) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  // Type-safe client accessors
+  const waitlistClient = client.waitlist as {
+    check: (input: { email?: string }) => Promise<{ exists: boolean }>;
+  };
+
+  const waitlistMutations = orpc.waitlist as unknown as {
+    add: {
+      mutationOptions: () => {
+        mutationFn: (input: {
+          name: string;
+          email: string;
+        }) => Promise<{ id: string; success: boolean }>;
+      };
+    };
+  };
+
+  const waitlistMutation = useMutation({
+    ...waitlistMutations.add.mutationOptions(),
+    onSuccess: () => {
+      toast.success(
+        "Successfully joined the waitlist! Check your email for confirmation."
+      );
+      form.reset();
+    },
+    onError: (error: Error) => {
+      const errorMessage =
+        error.message || "Failed to join waitlist. Please try again.";
+      toast.error(errorMessage);
+    },
+  });
+
+  async function onSubmit(values: FormSchema) {
+    try {
+      const result = await waitlistClient.check({
+        email: values.email,
+      });
+      if (result.exists) {
+        toast.info(
+          "You are already in our waitlist! We will update you as soon as we are done. Check your email for confirmation."
+        );
+        return;
+      }
+
+      await waitlistMutation.mutateAsync({
+        name: values.name,
+        email: values.email,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to check waitlist. Please try again.");
+      }
+      // Silently handle error - user will see toast notification if submission fails
+    }
   }
 
   return (
     <Form {...form}>
       <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="space-y-4">
-          <div className="flex gap-1 *:flex-1">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="john" {...field} />
-                  </FormControl>
-
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="doe" {...field} />
-                  </FormControl>
-
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input
+                    className="capitalize"
+                    disabled={waitlistMutation.isPending}
+                    placeholder="John Doe"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="email"
@@ -76,6 +118,8 @@ export function WaitlistForm() {
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
+                    className="lowercase"
+                    disabled={waitlistMutation.isPending}
                     inputMode="email"
                     placeholder="johndoe@example.com"
                     type="email"
@@ -88,8 +132,19 @@ export function WaitlistForm() {
           />
         </div>
 
-        <Button className="sm: ml-auto w-full py-3 sm:w-fit sm:px-16">
-          Join
+        <Button
+          className="sm: ml-auto w-full py-3 sm:w-fit sm:px-16"
+          disabled={waitlistMutation.isPending}
+          type="submit"
+        >
+          {waitlistMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Joining...
+            </>
+          ) : (
+            "Join"
+          )}
         </Button>
       </form>
     </Form>

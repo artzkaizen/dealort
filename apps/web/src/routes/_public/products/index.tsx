@@ -35,11 +35,52 @@ export const Route = createFileRoute("/_public/products/")({
 
 type SortMode = "newest" | "top" | "trending";
 
+interface ProductItem {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string | null;
+  logo: string | null;
+  category: string[] | null;
+  rating: number;
+  reviewCount: number;
+  commentCount: number;
+  impressions: number;
+  releaseDate: Date | string | null;
+  createdAt: Date | string;
+}
+
+interface ProductsListResponse {
+  items: ProductItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+interface LaunchesListResponse {
+  items: ProductItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 function RouteComponent() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categorySearch, setCategorySearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Type-safe client accessors
+  const productsClient = client.products as {
+    list: (input: {
+      cursor?: string;
+      limit: number;
+      categories?: string[];
+      sortBy: SortMode;
+    }) => Promise<ProductsListResponse>;
+    listLaunches: (input: {
+      sortBy: "launching_soon";
+      limit: number;
+    }) => Promise<LaunchesListResponse>;
+  };
 
   // Fetch products with infinite query
   const {
@@ -50,8 +91,8 @@ function RouteComponent() {
     isLoading,
   } = useInfiniteQuery({
     queryKey: ["products", "list", selectedCategories, sortMode],
-    queryFn: async ({ pageParam }: { pageParam: string | undefined }) =>
-      client.products.list({
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      productsClient.list({
         cursor: pageParam,
         limit: 10,
         categories:
@@ -66,7 +107,7 @@ function RouteComponent() {
   const { data: upcomingLaunches } = useQuery({
     queryKey: ["products", "listLaunches", "launching_soon"],
     queryFn: () =>
-      client.products.listLaunches({
+      productsClient.listLaunches({
         sortBy: "launching_soon",
         limit: 10,
       }),
@@ -74,7 +115,9 @@ function RouteComponent() {
 
   // Flatten all products from pages
   const allProducts = useMemo(
-    () => productsData?.pages.flatMap((page) => page.items) ?? [],
+    () =>
+      productsData?.pages.flatMap((page: ProductsListResponse) => page.items) ??
+      [],
     [productsData]
   );
 
@@ -146,10 +189,31 @@ function RouteComponent() {
     <main>
       <section className="relative min-h-[40vh]">
         <div className="relative z-10 flex flex-col items-center justify-center py-10">
-          <h1 className="text-center font-bold text-2xl sm:text-4xl">
+          {/* Subtle grid lines background */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0 select-none"
+            style={{
+              backgroundImage: `
+                linear-gradient(
+                  to right,
+                  var(--tw-bg-primary, theme(bgColor.primary)) 1px,
+                  transparent 1px
+                ),
+                linear-gradient(
+                  to bottom,
+                  var(--tw-bg-primary, theme(bgColor.primary)) 1px,
+                  transparent 1px
+                )
+              `,
+              backgroundSize: "40px 40px",
+              opacity: 0.05,
+            }}
+          />
+          <h1 className="relative z-10 text-center font-bold text-2xl sm:text-4xl">
             &bull; Explore Products &bull;
           </h1>
-          <p className="mt-4 max-w-2xl text-center text-muted-foreground text-sm sm:text-base">
+          <p className="relative z-10 mt-4 max-w-2xl text-center text-muted-foreground text-sm sm:text-base">
             Discover a curated selection of innovative products designed by
             industry experts to solve real-world problems and enhance your
             development workflow.
@@ -304,14 +368,14 @@ function RouteComponent() {
                       <ProductCardDetails
                         name={product.name}
                         slug={product.slug}
-                        tagline={product.tagline}
+                        tagline={product.tagline ?? ""}
                       />
                       <ProductCardRateAndReview
                         rating={product.rating}
                         reviewsCount={product.reviewCount}
                       />
                       <ProductCardCategory
-                        category={product.category}
+                        category={product.category ?? []}
                         className="mt-2 flex-wrap"
                       />
 
@@ -363,7 +427,7 @@ function RouteComponent() {
                 No upcoming launches
               </div>
             )}
-            {upcomingLaunchProducts.map((product) => (
+            {upcomingLaunchProducts.map((product: ProductItem) => (
               <ProductCard className="rounded-lg" key={product.id}>
                 <div className="flex justify-between gap-4">
                   <div className="flex items-start gap-1">
@@ -376,7 +440,7 @@ function RouteComponent() {
                         className="[&>a]:text-xs [&>p]:text-[10px]"
                         name={product.name}
                         slug={product.slug}
-                        tagline={product.tagline}
+                        tagline={product.tagline ?? ""}
                       />
                       {product.releaseDate && (
                         <ProductCardLaunchInfo

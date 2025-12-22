@@ -1,4 +1,7 @@
+import { createClient } from "@arcjet/protocol/client";
+import { createConnectTransport } from "@connectrpc/connect-node";
 import { env } from "@dealort/utils/env";
+import { apiLogger } from "@dealort/utils/logger";
 import arcjet, {
   detectBot,
   protectSignup,
@@ -11,15 +14,35 @@ import type { Context } from "hono";
 const mode =
   env.NODE_ENV === "production" ? ("LIVE" as const) : ("DRY_RUN" as const);
 
-const aj = arcjet({
-  key: env.ARCJET_KEY || "",
-  rules: [
-    shield({
-      mode,
-    }),
-  ],
-  characteristics: ["userIdOrIp"],
-});
+// Create Arcjet client with ConnectRPC transport
+// Arcjet requires a client to be provided
+const arcjetClient = env.ARCJET_KEY
+  ? createClient({
+      transport: createConnectTransport({
+        baseUrl: "https://decide.arcjet.com",
+        httpVersion: "2",
+      }),
+      baseUrl: "https://decide.arcjet.com",
+      timeout: 10_000,
+      sdkStack: "BUN",
+      sdkVersion: "1.0.0-beta.15",
+    })
+  : undefined;
+
+const aj =
+  env.ARCJET_KEY && arcjetClient
+    ? arcjet({
+        key: env.ARCJET_KEY,
+        log: apiLogger,
+        client: arcjetClient,
+        rules: [
+          shield({
+            mode,
+          }),
+        ],
+        characteristics: ["userIdOrIp"],
+      })
+    : null;
 
 const botSettings = {
   mode,
@@ -77,7 +100,10 @@ async function parseBodyForEmail(
 // Helper function to build protection rules for sign-up
 function buildSignUpProtection(
   parsedBody: Record<string, unknown> | undefined
-): ReturnType<typeof aj.withRule> {
+): ReturnType<NonNullable<typeof aj>["withRule"]> {
+  if (!aj) {
+    throw new Error("Arcjet is not initialized");
+  }
   if (
     parsedBody &&
     typeof parsedBody === "object" &&
@@ -99,7 +125,9 @@ function buildSignUpProtection(
 // Helper function to handle denied decisions
 function handleDeniedDecision(
   c: Context,
-  decision: Awaited<ReturnType<ReturnType<typeof aj.withRule>["protect"]>>
+  decision: Awaited<
+    ReturnType<ReturnType<NonNullable<typeof aj>["withRule"]>["protect"]>
+  >
 ) {
   if (decision.reason?.isRateLimit?.()) {
     return c.text("Too Many Requests", 429);
@@ -130,8 +158,8 @@ export async function arcjetProtectionMiddleware(
   c: Context,
   next: () => Promise<void>
 ) {
-  // Skip Arcjet if no key is configured (for local development)
-  if (!env.ARCJET_KEY) {
+  // Skip Arcjet if no key is configured or not initialized (for local development)
+  if (!(env.ARCJET_KEY && aj)) {
     await next();
     return;
   }
@@ -139,6 +167,7 @@ export async function arcjetProtectionMiddleware(
   const pathname = new URL(c.req.url).pathname;
   const userIdOrIp = getUserIdOrIp(c);
   const isSignUpRoute = pathname.startsWith("/api/auth/sign-up");
+  const isWaitlistRoute = pathname.includes("/waitlist/");
 
   // Build protection rules based on route
   let protectWith: ReturnType<typeof aj.withRule>;
@@ -147,6 +176,10 @@ export async function arcjetProtectionMiddleware(
   if (isSignUpRoute) {
     parsedBody = await parseBodyForEmail(c.req.raw);
     protectWith = buildSignUpProtection(parsedBody);
+  } else if (isWaitlistRoute) {
+    // For waitlist routes, only apply rate limiting (skip bot detection)
+    // Bot detection requires User-Agent header which may not be present
+    protectWith = aj.withRule(slidingWindow(laxRateLimitSettings));
   } else {
     protectWith = aj
       .withRule(detectBot(botSettings))
@@ -154,32 +187,45 @@ export async function arcjetProtectionMiddleware(
   }
 
   // Execute protection
-  const decision = await protectWith.protect(
-    {
-      method: c.req.method,
-      path: pathname,
-      headers: c.req.raw.headers,
-      ip:
-        c.req.header("x-forwarded-for") ||
-        c.req.header("x-real-ip") ||
-        undefined,
-      getBody: async () => {
-        if (isSignUpRoute) {
-          const clonedRequest = c.req.raw.clone();
-          return await clonedRequest.text();
-        }
-        return;
+  try {
+    const decision = await protectWith.protect(
+      {
+        method: c.req.method,
+        path: pathname,
+        headers: c.req.raw.headers,
+        ip:
+          c.req.header("x-forwarded-for") ||
+          c.req.header("x-real-ip") ||
+          undefined,
+        getBody: async () => {
+          if (isSignUpRoute) {
+            const clonedRequest = c.req.raw.clone();
+            return await clonedRequest.text();
+          }
+          return;
+        },
+        email: parsedBody?.email as string | undefined,
+        userIdOrIp,
       },
-      email: parsedBody?.email as string | undefined,
-      userIdOrIp,
-    },
-    {
-      userIdOrIp,
-    }
-  );
+      {
+        userIdOrIp,
+      }
+    );
 
-  if (decision.isDenied()) {
-    return handleDeniedDecision(c, decision);
+    if (decision.isDenied()) {
+      return handleDeniedDecision(c, decision);
+    }
+  } catch (error) {
+    // If Arcjet fails (e.g., missing User-Agent for bot detection), log and continue
+    // This prevents blocking legitimate requests due to Arcjet configuration issues
+    apiLogger.warn(
+      {
+        error: error instanceof Error ? error.message : String(error),
+        path: pathname,
+      },
+      "Arcjet protection failed, allowing request to proceed"
+    );
+    // Continue to next middleware/handler
   }
 
   await next();
