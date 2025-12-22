@@ -13,8 +13,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { link, type orpc } from "@/utils/orpc";
 import "../index.css";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
 export interface RouterAppContext {
   orpc: typeof orpc;
   queryClient: QueryClient;
@@ -57,7 +57,7 @@ function RootComponent() {
         <TooltipProvider>
           <Outlet />
           <Toaster richColors />
-          {/* <TanStackRouterDevtools position="bottom-left" /> */}
+          <TanStackRouterDevtools position="bottom-left" />
           <ReactQueryDevtools buttonPosition="bottom-right" position="bottom" />
         </TooltipProvider>
       </ThemeProvider>

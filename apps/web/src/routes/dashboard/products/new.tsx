@@ -19,6 +19,7 @@ interface SyncMetadataPayload {
   xUrl?: string;
   linkedinUrl?: string;
   sourceCodeUrl?: string;
+  releaseDateMs?: number | null;
 }
 
 function RouteComponent() {
@@ -80,14 +81,11 @@ function RouteComponent() {
       }),
       ...(logoUrl && { logo: logoUrl }),
       ...(galleryUrls.length > 0 && { gallery: galleryUrls }),
-      ...(data.getStarted.releaseDate && {
-        releaseDate: new Date(data.getStarted.releaseDate).getTime(),
-      }),
     };
   }
 
   /**
-   * Build metadata sync payload with only valid URLs
+   * Build metadata sync payload with only valid URLs and release date
    */
   function buildMetadataPayload(organizationId: string, data: ProductFormData) {
     return {
@@ -102,6 +100,10 @@ function RouteComponent() {
       ...(data.productInformation.sourceCodeUrl && {
         sourceCodeUrl: data.productInformation.sourceCodeUrl,
       }),
+      // Always include releaseDateMs to handle clearing (null) or setting a date
+      releaseDateMs: data.getStarted.releaseDate
+        ? data.getStarted.releaseDate.getTime()
+        : null,
     };
   }
 

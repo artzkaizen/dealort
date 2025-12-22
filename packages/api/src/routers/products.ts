@@ -391,8 +391,8 @@ export const productsRouter: Record<string, unknown> = {
         sourceCodeUrl: z.string().url().optional(),
         logo: z.string().url().optional(),
         gallery: z.array(z.string().url()).optional(),
-        // Release date in milliseconds since epoch (optional)
-        releaseDateMs: z.number().optional(),
+        // Release date in milliseconds since epoch (optional, null to clear)
+        releaseDateMs: z.union([z.number(), z.null()]).optional(),
       })
     )
     .handler(async ({ context, input }) => {

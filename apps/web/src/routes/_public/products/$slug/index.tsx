@@ -54,19 +54,38 @@ import { Rating, RatingItem } from "@/components/ui/rating";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth-client";
+import {
+  getOrganizationCategory,
+  getOrganizationGallery,
+  getOrganizationLogo,
+  isOrganizationListed,
+} from "@/lib/organization-utils";
 import { formatNumber, formatShortTime } from "@/lib/utils";
-import { client, orpc } from "@/utils/orpc";
+import type { ProductData } from "@/types/organization";
+import { client } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_public/products/$slug/")({
   beforeLoad: async ({ params }) => {
     try {
       // Check if the product is listed
-      const product = await client.products.getBySlug({
+      const product = await (
+        client.products as {
+          getBySlug: (params: { slug: string }) => Promise<{
+            id: string;
+            name: string;
+            slug: string;
+            isListed?: boolean;
+            [key: string]: unknown;
+          } | null>;
+        }
+      ).getBySlug({
         slug: params.slug,
       });
 
       // If product doesn't exist or is not listed, redirect to products page
-      if (!(product && (product as { isListed?: boolean }).isListed)) {
+      if (
+        !(product && isOrganizationListed(product as unknown as ProductData))
+      ) {
         throw redirect({
           to: "/products",
         });
@@ -95,14 +114,48 @@ function ProductDetailPage() {
   // Fetch product data (use raw ORPC client instead of query utils here)
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["products", "getBySlug", slug],
-    queryFn: () => client.products.getBySlug({ slug }),
+    queryFn: () =>
+      (
+        client.products as {
+          getBySlug: (params: { slug: string }) => Promise<{
+            id: string;
+            name: string;
+            slug: string;
+            tagline?: string;
+            description?: string;
+            logo?: string | null;
+            gallery?: string[] | null;
+            category?: string[] | null;
+            releaseDate?: Date | number | string | null;
+            averageRating?: number;
+            reviewCount?: number;
+            likeCount?: number;
+            hasLiked?: boolean;
+            isFollowing?: boolean;
+            followerCount?: number;
+            owner?: { name: string };
+            isListed?: boolean;
+            [key: string]: unknown;
+          } | null>;
+        }
+      ).getBySlug({ slug }),
   });
 
   // Fetch reviews with infinite query (not used directly but kept for future use)
   useInfiniteQuery({
     queryKey: ["reviews", "list", product?.id, "all", "recent"],
     queryFn: async ({ pageParam }: { pageParam: string | undefined }) =>
-      client.reviews.list({
+      (
+        client.reviews as {
+          list: (params: {
+            organizationId: string;
+            limit: number;
+            filter: string;
+            sortBy: string;
+            cursor?: string;
+          }) => Promise<{ nextCursor?: string | null; [key: string]: unknown }>;
+        }
+      ).list({
         organizationId: product?.id || "",
         limit: 10,
         filter: "all",
@@ -123,7 +176,19 @@ function ProductDetailPage() {
   } = useInfiniteQuery({
     queryKey: ["comments", "list", product?.id],
     queryFn: async ({ pageParam }: { pageParam: string | undefined }) =>
-      client.comments.list({
+      (
+        client.comments as {
+          list: (params: {
+            organizationId: string;
+            limit: number;
+            cursor?: string;
+          }) => Promise<{
+            items: CommentData[];
+            nextCursor?: string | null;
+            [key: string]: unknown;
+          }>;
+        }
+      ).list({
         organizationId: product?.id || "",
         limit: 10,
         cursor: pageParam,
@@ -135,7 +200,12 @@ function ProductDetailPage() {
 
   // Mutations
   const likeMutation = useMutation({
-    ...orpc.products.toggleLike.mutationOptions(),
+    mutationFn: async (params: { organizationId: string }) =>
+      await (
+        client.products as {
+          toggleLike: (params: { organizationId: string }) => Promise<unknown>;
+        }
+      ).toggleLike(params),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["products", "getBySlug", slug],
@@ -144,7 +214,14 @@ function ProductDetailPage() {
   });
 
   const followMutation = useMutation({
-    ...orpc.products.toggleFollow.mutationOptions(),
+    mutationFn: async (params: { organizationId: string }) =>
+      await (
+        client.products as {
+          toggleFollow: (params: {
+            organizationId: string;
+          }) => Promise<unknown>;
+        }
+      ).toggleFollow(params),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["products", "getBySlug", slug],
@@ -153,7 +230,20 @@ function ProductDetailPage() {
   });
 
   const createReviewMutation = useMutation({
-    ...orpc.reviews.create.mutationOptions(),
+    mutationFn: async (params: {
+      organizationId: string;
+      rating: number;
+      content: string;
+    }) =>
+      await (
+        client.reviews as {
+          create: (params: {
+            organizationId: string;
+            rating: number;
+            content: string;
+          }) => Promise<unknown>;
+        }
+      ).create(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reviews", "list"] });
       queryClient.invalidateQueries({
@@ -164,13 +254,26 @@ function ProductDetailPage() {
       setReviewContent("");
       toast.success("Review created successfully");
     },
-    onError: (error) => {
+    onError: (error: { message?: string }) => {
       toast.error(error.message || "Failed to create review");
     },
   });
 
   const createCommentMutation = useMutation({
-    ...orpc.comments.create.mutationOptions(),
+    mutationFn: async (params: {
+      organizationId: string;
+      content: string;
+      parentId?: string;
+    }) =>
+      await (
+        client.comments as {
+          create: (params: {
+            organizationId: string;
+            content: string;
+            parentId?: string;
+          }) => Promise<unknown>;
+        }
+      ).create(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", "list"] });
       setCommentContent("");
@@ -178,21 +281,30 @@ function ProductDetailPage() {
       setReplyDialogOpen(false);
       toast.success("Comment posted successfully");
     },
-    onError: (error) => {
+    onError: (error: { message?: string }) => {
       toast.error(error.message || "Failed to post comment");
     },
   });
 
-  // Comment mutations
   const likeCommentMutation = useMutation({
-    ...orpc.comments.toggleLike.mutationOptions(),
+    mutationFn: async (params: { commentId: string }) =>
+      await (
+        client.comments as {
+          toggleLike: (params: { commentId: string }) => Promise<unknown>;
+        }
+      ).toggleLike(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", "list"] });
     },
   });
 
   const updateCommentMutation = useMutation({
-    ...orpc.comments.update.mutationOptions(),
+    mutationFn: async (params: { id: string; content: string }) =>
+      await (
+        client.comments as {
+          update: (params: { id: string; content: string }) => Promise<unknown>;
+        }
+      ).update(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", "list"] });
       setEditCommentDialogOpen(false);
@@ -201,14 +313,34 @@ function ProductDetailPage() {
   });
 
   const deleteCommentMutation = useMutation({
-    ...orpc.comments.delete.mutationOptions(),
+    mutationFn: async (params: { id: string }) =>
+      await (
+        client.comments as {
+          delete: (params: { id: string }) => Promise<unknown>;
+        }
+      ).delete(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", "list"] });
     },
   });
 
   const createReportMutation = useMutation({
-    ...orpc.reports.create.mutationOptions(),
+    mutationFn: async (params: {
+      reportableType: "comment" | "review";
+      reportableId: string;
+      reason: string;
+      description?: string;
+    }) =>
+      await (
+        client.reports as {
+          create: (params: {
+            reportableType: "comment" | "review";
+            reportableId: string;
+            reason: string;
+            description?: string;
+          }) => Promise<unknown>;
+        }
+      ).create(params),
     onSuccess: () => {
       setReportDialogOpen(false);
       setReportTarget(null);
@@ -264,7 +396,7 @@ function ProductDetailPage() {
       try {
         await navigator.share({
           title: product.name,
-          text: product.tagline,
+          text: product.tagline || "",
           url: window.location.href,
         });
       } catch {
@@ -273,6 +405,7 @@ function ProductDetailPage() {
     } else {
       // Fallback: copy to clipboard
       await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard");
     }
   };
 
@@ -298,14 +431,18 @@ function ProductDetailPage() {
     setReportDialogOpen(true);
   };
 
-  const handleSubmitReport = async (reason: string, description?: string) => {
-    if (!reportTarget) return;
+  const handleSubmitReport = (
+    reason: string,
+    description?: string
+  ): Promise<void> => {
+    if (!reportTarget) return Promise.resolve();
     createReportMutation.mutate({
       reportableType: reportTarget.type,
       reportableId: reportTarget.id,
       reason,
       description,
     });
+    return Promise.resolve();
   };
 
   if (productLoading) {
@@ -343,15 +480,20 @@ function ProductDetailPage() {
       <div className="mb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
-            {product.logo && (
-              <img
-                alt={product.name}
-                className="size-16 rounded-lg object-cover sm:size-20"
-                height={80}
-                src={product.logo}
-                width={80}
-              />
-            )}
+            {(() => {
+              const logo = getOrganizationLogo(
+                product as unknown as ProductData
+              );
+              return logo ? (
+                <img
+                  alt={product.name}
+                  className="size-16 rounded-lg object-cover sm:size-20"
+                  height={80}
+                  src={logo}
+                  width={80}
+                />
+              ) : null;
+            })()}
             <div className="flex-1">
               <h1 className="font-bold text-2xl sm:text-3xl">{product.name}</h1>
               <p className="mt-1 text-muted-foreground text-sm sm:text-base">
@@ -414,31 +556,38 @@ function ProductDetailPage() {
         </div>
 
         {/* Categories */}
-        {product.category && Array.isArray(product.category) && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(product.category as string[]).map((cat) => (
-              <span
-                className="rounded-full bg-muted px-3 py-1 font-medium text-xs"
-                key={cat}
-              >
-                {cat}
-              </span>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const categories = getOrganizationCategory(
+            product as unknown as ProductData
+          );
+          return categories.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {categories.map((cat: string) => (
+                <span
+                  className="rounded-full bg-muted px-3 py-1 font-medium text-xs"
+                  key={cat}
+                >
+                  {cat}
+                </span>
+              ))}
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Gallery Carousel */}
-      {product.gallery &&
-        Array.isArray(product.gallery) &&
-        (product.gallery as string[]).length > 0 && (
+      {(() => {
+        const gallery = getOrganizationGallery(
+          product as unknown as ProductData
+        );
+        return gallery.length > 0 ? (
           <div className="mb-8">
             <Carousel className="w-full">
               <CarouselContent>
-                {(product.gallery as string[]).map((image, index) => (
-                  <CarouselItem key={`gallery-${image}-${index}`}>
+                {gallery.map((image: string) => (
+                  <CarouselItem key={`gallery-${image}`}>
                     <img
-                      alt={`${product.name} gallery ${index + 1}`}
+                      alt={`${product.name} gallery`}
                       className="h-[400px] w-full rounded-lg object-cover"
                       height={400}
                       src={image}
@@ -451,7 +600,8 @@ function ProductDetailPage() {
               <CarouselNext />
             </Carousel>
           </div>
-        )}
+        ) : null;
+      })()}
 
       <Separator className="my-8" />
 
@@ -543,11 +693,11 @@ function ProductDetailPage() {
               currentUserId={session?.user?.id}
               key={comment.id}
               onDelete={(id) => {
-                if (
-                  window.confirm(
-                    "Are you sure you want to delete this comment?"
-                  )
-                ) {
+                // biome-ignore lint/suspicious/noAlert: User confirmation required before deletion
+                const confirmed = window.confirm(
+                  "Are you sure you want to delete this comment?"
+                );
+                if (confirmed) {
                   deleteCommentMutation.mutate({ id });
                 }
               }}
@@ -670,14 +820,15 @@ function ProductDetailPage() {
         <ReplyFormDialog
           isLoading={createCommentMutation.isPending}
           onOpenChange={setReplyDialogOpen}
-          onSubmit={async (content) => {
-            if (!product) return;
+          onSubmit={(content) => {
+            if (!product) return Promise.resolve();
             createCommentMutation.mutate({
               organizationId: product.id,
               content,
               parentId: replyingTo.id,
             });
             setReplyingTo(null);
+            return Promise.resolve();
           }}
           open={replyDialogOpen}
           replyingTo={replyingTo}
@@ -689,13 +840,13 @@ function ProductDetailPage() {
         <EditCommentDialog
           comment={editingComment}
           onOpenChange={setEditCommentDialogOpen}
-          onSave={async (content) => {
-            if (editingComment) {
-              updateCommentMutation.mutate({
-                id: editingComment.id,
-                content,
-              });
-            }
+          onSave={(content) => {
+            if (!editingComment) return Promise.resolve();
+            updateCommentMutation.mutate({
+              id: editingComment.id,
+              content,
+            });
+            return Promise.resolve();
           }}
           open={editCommentDialogOpen}
         />
@@ -705,7 +856,7 @@ function ProductDetailPage() {
 }
 
 // Comment Item Component
-type CommentData = {
+interface CommentData {
   id: string;
   content: string;
   createdAt: Date;
@@ -719,7 +870,7 @@ type CommentData = {
   likeCount: number;
   hasLiked: boolean;
   replies?: CommentData[];
-};
+}
 
 interface CommentItemProps {
   comment: CommentData;
@@ -750,6 +901,20 @@ function CommentItem({
   const [showReplies, setShowReplies] = useState(true);
   // All replies have the same indentation regardless of depth
   const paddingLeft = depth > 0 ? "ml-12" : "";
+
+  const handleDelete = () => {
+    // biome-ignore lint/suspicious/noAlert: User confirmation required before deletion
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this comment?"
+    );
+    if (confirmed) {
+      onDelete(comment.id);
+    }
+  };
+
+  const handleToggleReplies = () => {
+    setShowReplies(!showReplies);
+  };
 
   return (
     <div className={`space-y-4 ${paddingLeft}`}>
@@ -810,7 +975,7 @@ function CommentItem({
                         </Button>
                         <Button
                           className="w-full justify-start text-destructive"
-                          onClick={() => onDelete(comment.id)}
+                          onClick={handleDelete}
                           size="sm"
                           variant="ghost"
                         >
@@ -857,11 +1022,7 @@ function CommentItem({
               </Button>
             )}
             {hasReplies && (
-              <Button
-                onClick={() => setShowReplies(!showReplies)}
-                size="sm"
-                variant="ghost"
-              >
+              <Button onClick={handleToggleReplies} size="sm" variant="ghost">
                 {showReplies ? (
                   <>
                     <ChevronUp className="mr-1 size-4" />

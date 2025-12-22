@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
+import { formatNumber } from "@/lib/utils";
 import { useDashboardStore } from "@/stores/dashboard-store";
 import { client } from "@/utils/orpc";
 
@@ -72,13 +73,13 @@ function buildAnalyticsCardsData(
     },
     {
       label: "Impressions",
-      value: analyticsData?.impressions?.value || "0",
+      value: `${formatNumber.format(Number(analyticsData?.impressions?.value)) || "0"}`,
       change: analyticsData?.impressions?.change || emptyChange,
       icon: getChangeIcon(analyticsData?.impressions?.change?.positive ?? true),
     },
     {
       label: "Ratings",
-      value: analyticsData?.ratings?.value || "0",
+      value: `${formatNumber.format(Number(analyticsData?.ratings?.value)) || "0"}`,
       change: analyticsData?.ratings?.change || emptyChange,
       icon: getChangeIcon(analyticsData?.ratings?.change?.positive ?? true),
     },

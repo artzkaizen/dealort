@@ -108,7 +108,7 @@ function RouteComponent() {
     xUrl?: string;
     linkedinUrl?: string;
     sourceCodeUrl?: string;
-    releaseDateMs?: number;
+    releaseDateMs?: number | null;
   }
 
   const syncMetadataMutation = useMutation({
@@ -159,9 +159,10 @@ function RouteComponent() {
       ...(data.productInformation.sourceCodeUrl && {
         sourceCodeUrl: data.productInformation.sourceCodeUrl,
       }),
-      ...(data.getStarted.releaseDate && {
-        releaseDateMs: data.getStarted.releaseDate.getTime(),
-      }),
+      // Always include releaseDateMs to handle clearing (null) or setting a date
+      releaseDateMs: data.getStarted.releaseDate
+        ? data.getStarted.releaseDate.getTime()
+        : null,
     };
   }
 

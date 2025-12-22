@@ -442,7 +442,7 @@ function RouteComponent() {
               </ProductCard>
             ))}
 
-            {(recentProducts?.length ?? 0) > 10 && (
+            {!!recentProducts && recentProducts.length > 0 && (
               <Button asChild className="w-full" variant="outline">
                 <Link to="/products">
                   View All Products <ArrowRightIcon />

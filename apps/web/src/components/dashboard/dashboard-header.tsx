@@ -44,7 +44,12 @@ export function DashboardHeader() {
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button asChild className="rounded-xl" variant="default">
+            <Button
+              aria-label="Add new product"
+              asChild
+              className="rounded-full"
+              variant="secondary"
+            >
               <Link to="/dashboard/products/new">
                 <PlusIcon />
               </Link>
