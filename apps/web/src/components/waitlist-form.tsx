@@ -22,7 +22,11 @@ const formSchema = z.object({
 });
 type FormSchema = z.infer<typeof formSchema>;
 
-export function WaitlistForm() {
+interface WaitlistFormProps {
+  afterSubmit?: () => void;
+}
+
+export function WaitlistForm({ afterSubmit }: WaitlistFormProps) {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,6 +58,7 @@ export function WaitlistForm() {
         "Successfully joined the waitlist! Check your email for confirmation."
       );
       form.reset();
+      afterSubmit?.();
     },
     onError: (error: Error) => {
       const errorMessage =

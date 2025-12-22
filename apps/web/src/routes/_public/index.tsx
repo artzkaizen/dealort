@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import DashboardImage from "@/assets/screenshots/dashboard-screenshot.svg";
-import DashboardImageNoNav from "@/assets/screenshots/dashboard-screenshot-no-nav.svg";
+import DashboardImage from "@/assets/screenshots/dashboard-screenshot.png";
+import DashboardImageNoNav from "@/assets/screenshots/dashboard-screenshot-no-nav.png";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -92,7 +92,7 @@ function HomeComponent() {
 
             <motion.img
               alt="Dashboard screenshot"
-              className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] relative left-[-85%] z-1 mt-[-48px] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
+              className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] relative left-[-90%] z-1 mt-[-48px] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
               height=""
               initial={{ filter: "blur(10px)", top: -200 }}
               src={DashboardImageNoNav}

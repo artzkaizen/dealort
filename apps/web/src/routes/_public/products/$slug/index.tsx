@@ -392,13 +392,14 @@ function ProductDetailPage() {
   };
 
   const handleShare = async () => {
+    console.log(navigator, product);
     if (navigator.share && product) {
       try {
         await navigator.share({
           title: product.name,
           text: product.tagline || "",
           url: window.location.href,
-        });
+        })
       } catch {
         // User cancelled or error occurred
       }

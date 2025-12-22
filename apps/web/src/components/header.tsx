@@ -4,6 +4,15 @@ import { motion, useScroll } from "motion/react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { WaitlistForm } from "./waitlist-form";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,12 +69,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button asChild>
-              <a className="text-xs" href="#waitlist">
-                Join Waitlist
-              </a>
-            </Button>
-
+            <WaitlistDialog />
             <Button
               className={cn(
                 "relative flex h-10 w-10 items-center justify-center transition-colors duration-200 sm:hidden",
@@ -125,5 +129,26 @@ export function Header() {
         />
       )}
     </div>
+  );
+}
+
+function WaitlistDialog() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
+        <Button>Join Waitlist</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Join Waitlist</DialogTitle>
+          <DialogDescription>
+            Be the first to know when we launch.
+          </DialogDescription>
+        </DialogHeader>
+
+        <WaitlistForm afterSubmit={() => setOpen(false)} />
+      </DialogContent>
+    </Dialog>
   );
 }
