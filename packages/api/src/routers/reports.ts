@@ -1,5 +1,5 @@
 import { db } from "@dealort/db";
-import { report } from "@dealort/db/schema/reviews";
+import { report } from "@dealort/db/schema";
 import { z } from "zod";
 import { protectedProcedure } from "../index";
 

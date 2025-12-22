@@ -1,8 +1,7 @@
 import { db } from "@dealort/db";
-import { member, organizationImpression } from "@dealort/db/schema/auth";
-import { review } from "@dealort/db/schema/reviews";
+import { member, organizationImpression, review } from "@dealort/db/schema";
 import { and, count, eq, gte, lt, sql } from "drizzle-orm";
-import { z } from "zod";
+import * as z from "zod/v4";
 import { protectedProcedure } from "../index";
 
 /**
