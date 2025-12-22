@@ -84,7 +84,6 @@ export function ProductCardRateAndReview({
   return (
     <div className={cn("flex items-center gap-2", className)} {...props}>
       <div className="flex items-center gap-[0.4px]">
-        <small className="text-[11px]">{rating}</small>
         <Rating
           className="gap-px text-yellow-500 [&>svg]:size-3"
           defaultValue={rating}

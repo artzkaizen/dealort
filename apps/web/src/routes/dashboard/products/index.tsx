@@ -149,11 +149,16 @@ function ProductCard({ organization }: ProductCardProps) {
       </CardHeader>
 
       <CardContent className="flex flex-wrap gap-1 px-2 py-0">
-        {categories.map((category) => (
-          <Badge key={category} variant="secondary">
-            {category}
-          </Badge>
-        ))}
+        <div className="flex flex-wrap gap-1">
+          {categories.slice(0, 3).map((category) => (
+            <Badge key={category} variant="secondary">
+              {category}
+            </Badge>
+          ))}
+          {categories.length > 3 && (
+            <Badge variant="secondary">+{categories.length - 3}</Badge>
+          )}
+        </div>
       </CardContent>
 
       <CardFooter className="flex flex-wrap items-end justify-between gap-2 border-t px-2 pt-0 pb-2">

@@ -140,9 +140,6 @@ function RouteComponent() {
 
             {status === "needs-auth" && !showLoginDialog && (
               <div className="space-y-4">
-                <p className="text-center text-muted-foreground text-sm">
-                  You need to be signed in to accept this invitation.
-                </p>
                 <Button
                   className="w-full"
                   onClick={() => setShowLoginDialog(true)}

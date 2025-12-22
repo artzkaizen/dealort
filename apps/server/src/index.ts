@@ -135,7 +135,7 @@ export const rpcHandler = new RPCHandler(
 );
 
 // Apply Arcjet protection to RPC and API routes
-app.use("/rpc/*", arcjetProtectionMiddleware);
+// app.use("/rpc/*", arcjetProtectionMiddleware);
 app.use("/api-reference/*", arcjetProtectionMiddleware);
 
 /**

@@ -1253,7 +1253,8 @@ export function ProductForm({
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-auto p-0">
                           <Calendar
-                            disabled={(date) => date < new Date("1900-01-01")}
+                            captionLayout="dropdown-years"
+                            disabled={(date) => date?.getTime() < new Date("1900-01-01").getTime()}
                             mode="single"
                             onSelect={field.onChange}
                             selected={field.value}
