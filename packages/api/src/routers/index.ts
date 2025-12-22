@@ -1,6 +1,6 @@
 import { db } from "@dealort/db";
 import type { RouterClient } from "@orpc/server";
-import { z } from "zod";
+import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
 import { analyticsRouter } from "./analytics";
 import { commentsRouter } from "./comments";
@@ -15,7 +15,7 @@ import { waitlistRouter } from "./waitlist";
  * Note: Type annotation is intentionally omitted to allow TypeScript to infer the type.
  * The AppRouter type is exported separately for client usage.
  */
-// @ts-expect-error - Type inference exceeds TypeScript's serialization limit, but runtime works correctly
+
 export const appRouter = {
   /**
    * Simple health check endpoint
@@ -88,5 +88,5 @@ export type AppRouter = typeof appRouter;
 // Type assertion needed because child routers use Record<string, unknown>
 // which doesn't satisfy ORPC's strict Router type constraint, but works correctly at runtime
 // The routers are properly structured ORPC routers, just typed more loosely
-// @ts-expect-error - Record<string, unknown> doesn't satisfy Router constraint but works at runtime
+
 export type AppRouterClient = RouterClient<typeof appRouter>;

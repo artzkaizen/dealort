@@ -1,6 +1,6 @@
 import { passkey } from "@better-auth/passkey";
 import { db } from "@dealort/db";
-import * as schema from "@dealort/db/schema/auth";
+import * as schema from "@dealort/db/schema";
 import { env } from "@dealort/utils/env";
 import { authLogger } from "@dealort/utils/logger";
 import { type BetterAuthOptions, betterAuth, type User } from "better-auth";

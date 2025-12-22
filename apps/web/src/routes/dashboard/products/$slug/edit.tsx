@@ -45,16 +45,7 @@ export const Route = createFileRoute("/dashboard/products/$slug/edit")({
       });
     }
 
-    const organizationMetadata = await (
-      client.products as {
-        getBySlug: (params: { slug: string }) => Promise<{
-          url: string | null;
-          xURL: string | null;
-          linkedinURL: string | null;
-          sourceCodeURL: string | null;
-        }>;
-      }
-    ).getBySlug({
+    const organizationMetadata = await client.products.getBySlug({
       slug: params.slug,
     });
 

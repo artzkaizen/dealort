@@ -1,8 +1,7 @@
 import { db } from "@dealort/db";
-import { organization, user } from "@dealort/db/schema/auth";
-import { review } from "@dealort/db/schema/reviews";
+import { organization, review, user } from "@dealort/db/schema";
 import { and, asc, desc, eq, type SQL, sql } from "drizzle-orm";
-import { z } from "zod";
+import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
 
 // Helper function to update organization rating
@@ -54,7 +53,7 @@ async function enrichReviewWithUser(r: typeof review.$inferSelect) {
   };
 }
 
-export const reviewsRouter: Record<string, unknown> = {
+export const reviewsRouter = {
   /**
    * Create a review
    */

@@ -1,15 +1,16 @@
 import { db } from "@dealort/db";
 import {
+  comment,
   follow,
   member,
   organization,
   organizationImpression,
-} from "@dealort/db/schema/auth";
-import { organizationReference } from "@dealort/db/schema/org_meta";
-import { comment, review } from "@dealort/db/schema/reviews";
+  organizationReference,
+  review,
+} from "@dealort/db/schema";
 import { apiLogger } from "@dealort/utils/logger";
 import { and, count, desc, eq, sql } from "drizzle-orm";
-import { z } from "zod";
+import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
 
 // Helper function to fetch organization stats
@@ -170,8 +171,8 @@ async function enrichOrganizationWithStats(
   });
 
   const logo = org.logo ?? null;
-  const gallery = (org.gallery as string[] | null) ?? [];
-  const category = (org.category as string[] | null) ?? [];
+  const gallery = org.gallery ?? [];
+  const category = org.category ?? [];
 
   return {
     id: org.id,
@@ -197,7 +198,7 @@ async function enrichOrganizationWithStats(
   };
 }
 
-export const productsRouter: Record<string, unknown> = {
+export const productsRouter = {
   /**
    * Get product/organization by slug
    */
@@ -205,7 +206,7 @@ export const productsRouter: Record<string, unknown> = {
     .input(z.object({ slug: z.string() }))
     .handler(async ({ context, input }) => {
       try {
-        const org = (await db.query.organization.findFirst({
+        const org = await db.query.organization.findFirst({
           where: eq(organization.slug, input.slug),
           with: {
             members: {
@@ -215,11 +216,7 @@ export const productsRouter: Record<string, unknown> = {
               },
             },
           },
-        })) as
-          | (typeof organization.$inferSelect & {
-              members?: Array<{ user?: unknown }>;
-            })
-          | undefined;
+        });
 
         if (!org) {
           throw new Error("Product not found");
@@ -233,10 +230,8 @@ export const productsRouter: Record<string, unknown> = {
 
         // Get the owner (first member's user)
         const owner =
-          (org as { members?: Array<{ user?: unknown }> }).members &&
-          (org as { members: Array<{ user?: unknown }> }).members.length > 0
-            ? ((org as { members: Array<{ user?: unknown }> }).members[0]
-                ?.user ?? null)
+          org.members && org.members.length > 0
+            ? (org.members[0]?.user ?? null)
             : null;
 
         // Get references (one record per organization) from normalized table
@@ -250,7 +245,7 @@ export const productsRouter: Record<string, unknown> = {
 
         // Get logo and gallery from organization table
         const logo = org.logo ?? null;
-        const gallery = (org.gallery as string[] | null) ?? [];
+        const gallery = org.gallery ?? [];
 
         return {
           ...org,
@@ -385,12 +380,12 @@ export const productsRouter: Record<string, unknown> = {
     .input(
       z.object({
         organizationId: z.string(),
-        url: z.string().url().optional(),
-        xUrl: z.string().url().optional(),
-        linkedinUrl: z.string().url().optional(),
-        sourceCodeUrl: z.string().url().optional(),
-        logo: z.string().url().optional(),
-        gallery: z.array(z.string().url()).optional(),
+        url: z.url().optional(),
+        xUrl: z.url().optional(),
+        linkedinUrl: z.url().optional(),
+        sourceCodeUrl: z.url().optional(),
+        logo: z.url().optional(),
+        gallery: z.array(z.url()).optional(),
         // Release date in milliseconds since epoch (optional, null to clear)
         releaseDateMs: z.union([z.number(), z.null()]).optional(),
       })
@@ -470,7 +465,7 @@ export const productsRouter: Record<string, unknown> = {
       let filteredOrgs = allOrgs;
       if (input.categories && input.categories.length > 0) {
         filteredOrgs = allOrgs.filter((org) => {
-          const orgCategories = (org.category as string[] | null) ?? [];
+          const orgCategories = org.category ?? [];
           return input.categories?.some((cat) => orgCategories.includes(cat));
         });
       }
@@ -553,7 +548,7 @@ export const productsRouter: Record<string, unknown> = {
       let filteredOrgs = allOrgs.filter((org) => org.releaseDate !== null);
       if (input.categories && input.categories.length > 0) {
         filteredOrgs = filteredOrgs.filter((org) => {
-          const orgCategories = (org.category as string[] | null) ?? [];
+          const orgCategories = org.category ?? [];
           return input.categories?.some((cat) => orgCategories.includes(cat));
         });
       }

@@ -46,7 +46,7 @@ const aj =
 
 const botSettings = {
   mode,
-  deny: [] as never[],
+  deny: [],
 };
 
 const restrictiveRateLimitSettings = {

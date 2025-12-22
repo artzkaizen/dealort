@@ -1,9 +1,9 @@
 import { sendWaitlistConfirmationEmail } from "@dealort/auth/emails/service";
 import { db } from "@dealort/db";
-import { waitlist } from "@dealort/db/schema/waitlist";
+import { waitlist } from "@dealort/db/schema";
 import { apiLogger } from "@dealort/utils/logger";
 import { eq } from "drizzle-orm";
-import z from "zod";
+import * as z from "zod/v4";
 import { publicProcedure } from "..";
 
 export const waitlistRouter = {
