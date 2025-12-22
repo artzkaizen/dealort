@@ -1,6 +1,6 @@
 import { db } from "@dealort/db";
 import { report } from "@dealort/db/schema";
-import { z } from "zod";
+import * as z from "zod/v4";
 import { protectedProcedure } from "../index";
 
 export const reportsRouter = {

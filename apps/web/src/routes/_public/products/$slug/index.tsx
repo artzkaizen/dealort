@@ -399,7 +399,7 @@ function ProductDetailPage() {
           title: product.name,
           text: product.tagline || "",
           url: window.location.href,
-        })
+        });
       } catch {
         // User cancelled or error occurred
       }
