@@ -80,7 +80,7 @@ export function LoginForm({
 
   const loginContent = (
     <div className="flex flex-col gap-6 px-4 pt-16 md:px-20 md:pt-[20%]">
-      <div className="flex max-w-md flex-col gap-2">
+      <div className="flex max-w-md flex-col gap-2 max-md:mx-auto">
         <h1 className="text-3xl">Welcome,</h1>
         <p className="mb-4 font-light text-sm">
           Safely Create an account or Login safely withing a few clicks using

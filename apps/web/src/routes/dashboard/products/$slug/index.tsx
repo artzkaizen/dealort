@@ -67,6 +67,7 @@ import {
   isOrganizationOpenSource,
 } from "@/lib/organization-utils";
 import { cn } from "@/lib/utils";
+import { PRODUCT_PRIVACY_STATE_CLASSES } from "@/utils/constants";
 import { client } from "@/utils/orpc";
 
 const MEMBER_LIMIT = 15;
@@ -129,7 +130,8 @@ function RouteComponent() {
 
   const org = organization.data;
   const filteredInvitations = org.invitations.filter(
-    (invitation) => invitation.status !== "canceled"
+    (invitation) =>
+      invitation.status !== "canceled" && invitation.status !== "accepted"
   );
   const userId = currentSession?.user?.id || session?.user?.id;
 
@@ -342,7 +344,12 @@ function ProductDetailsTab({
                   </h1>
 
                   <Badge
-                    className="size-fit text-[10px]"
+                    className={cn(
+                      "size-fit text-[10px]",
+                      PRODUCT_PRIVACY_STATE_CLASSES[
+                        org.isListed ? "listed" : "not_listed"
+                      ]
+                    )}
                     variant={
                       "isListed" in org && org.isListed
                         ? "default"

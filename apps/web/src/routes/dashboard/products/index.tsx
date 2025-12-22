@@ -34,6 +34,8 @@ import {
   getOrganizationTagline,
   isOrganizationListed,
 } from "@/lib/organization-utils";
+import { cn } from "@/lib/utils";
+import { PRODUCT_PRIVACY_STATE_CLASSES } from "@/utils/constants";
 
 export const Route = createFileRoute("/dashboard/products/")({
   component: RouteComponent,
@@ -138,7 +140,12 @@ function ProductCard({ organization }: ProductCardProps) {
             <h2 className="font-semibold text-sm">{organization.name}</h2>
 
             <Badge
-              className="size-fit text-[10px]"
+              className={cn(
+                "size-fit text-[10px]",
+                PRODUCT_PRIVACY_STATE_CLASSES[
+                  isListed ? "listed" : "not_listed"
+                ]
+              )}
               variant={isListed ? "default" : "secondary"}
             >
               {isListed ? "Listed" : "Not Listed"}

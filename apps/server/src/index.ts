@@ -101,38 +101,29 @@ function createErrorHandler(handlerName: string) {
     captureException(err, {
       handler: handlerName,
     });
-    // @ts-expect-error - Type assertion needed for ORPC interceptor compatibility
-  }) as any;
+  });
 }
 
 /**
  * OpenAPI handler for API documentation and reference
  * Note: Type assertion is needed due to complex router type inference
  */
-export const apiHandler = new OpenAPIHandler(
-  // @ts-expect-error - Complex router type inference exceeds TypeScript limits
-  appRouter as any,
-  {
-    plugins: [
-      new OpenAPIReferencePlugin({
-        schemaConverters: [new ZodToJsonSchemaConverter()],
-      }),
-    ],
-    interceptors: [createErrorHandler("OpenAPI")],
-  }
-);
+export const apiHandler = new OpenAPIHandler(appRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+    }),
+  ],
+  interceptors: [createErrorHandler("OpenAPI")],
+});
 
 /**
  * RPC handler for client-server communication
  * Note: Type assertion is needed due to complex router type inference
  */
-export const rpcHandler = new RPCHandler(
-  // @ts-expect-error - Complex router type inference exceeds TypeScript limits
-  appRouter as any,
-  {
-    interceptors: [createErrorHandler("RPC")],
-  }
-);
+export const rpcHandler = new RPCHandler(appRouter, {
+  interceptors: [createErrorHandler("RPC")],
+});
 
 // Apply Arcjet protection to RPC and API routes
 // app.use("/rpc/*", arcjetProtectionMiddleware);

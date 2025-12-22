@@ -1,8 +1,7 @@
 import { db } from "@dealort/db";
-import { user } from "@dealort/db/schema/auth";
-import { comment, commentLike } from "@dealort/db/schema/reviews";
+import { comment, commentLike, user } from "@dealort/db/schema";
 import { and, desc, eq, isNull, type SQL, sql } from "drizzle-orm";
-import { z } from "zod";
+import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
 
 // Helper function to enrich comment with user data
@@ -79,7 +78,7 @@ async function fetchRepliesRecursively(
   return repliesWithUsers;
 }
 
-export const commentsRouter: Record<string, unknown> = {
+export const commentsRouter = {
   /**
    * Create a comment or reply
    */
