@@ -190,10 +190,10 @@ function SidebarContentInner() {
       {/* Sidebar Header with toggle button */}
       <SidebarHeader className="h-15 border-b px-2">
         <div className="flex w-full items-center justify-between">
-          <h2 className="flex w-full items-center gap-1" id="">
+          <Link className="flex w-full items-center gap-1" id="" to="/">
             <Button aria-label="dealort dashboard" className="max-h-8" />
             {!isCollapsed && "Dealort"}
-          </h2>
+          </Link>
         </div>
       </SidebarHeader>
 

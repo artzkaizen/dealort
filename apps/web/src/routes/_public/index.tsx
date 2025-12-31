@@ -80,7 +80,7 @@ function HomeComponent() {
           <div className="flex max-sm:mt-[10%] lg:mt-[-80px]">
             <motion.img
               alt="Dashboard screenshot"
-              className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] relative left-[2%] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
+              className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] dark:invert! relative left-[2%] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
               height=""
               initial={{ filter: "blur(10px)", top: -100 }}
               src={DashboardImage}
@@ -89,10 +89,9 @@ function HomeComponent() {
               whileInView={{ filter: "blur(0px)", top: 0 }}
               width=""
             />
-
             <motion.img
               alt="Dashboard screenshot"
-              className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] relative left-[-90%] z-1 mt-[-48px] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
+              className="transform-[perspective(900px)_rotateX(15deg)_rotateY(0deg)_rotateZ(-13deg)_skewX(30deg)_scale(0.78)] dark:invert! relative left-[-90%] z-1 mt-[-48px] w-auto rounded-xl shadow-[0_16px_40px_0_rgba(0,0,0,0.13),0_2px_8px_0_rgba(0,0,0,0.11)]"
               height=""
               initial={{ filter: "blur(10px)", top: -200 }}
               src={DashboardImageNoNav}
