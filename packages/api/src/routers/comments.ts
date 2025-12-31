@@ -1,5 +1,6 @@
 import { db } from "@dealort/db";
 import { comment, commentLike, user } from "@dealort/db/schema";
+import { ORPCError } from "@orpc/server";
 import { and, desc, eq, isNull, type SQL, sql } from "drizzle-orm";
 import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
@@ -92,7 +93,7 @@ export const commentsRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const id = crypto.randomUUID();
@@ -119,7 +120,7 @@ export const commentsRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const existingComment = await db.query.comment.findFirst({
@@ -130,7 +131,9 @@ export const commentsRouter = {
       });
 
       if (!existingComment) {
-        throw new Error("Comment not found or unauthorized");
+        throw new ORPCError("NOT_FOUND", {
+          message: "Comment not found or unauthorized",
+        });
       }
 
       await db
@@ -150,7 +153,7 @@ export const commentsRouter = {
     .input(z.object({ id: z.string() }))
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const existingComment = await db.query.comment.findFirst({
@@ -161,7 +164,9 @@ export const commentsRouter = {
       });
 
       if (!existingComment) {
-        throw new Error("Comment not found or unauthorized");
+        throw new ORPCError("NOT_FOUND", {
+          message: "Comment not found or unauthorized",
+        });
       }
 
       // Delete all replies first (cascade should handle this, but being explicit)
@@ -181,7 +186,7 @@ export const commentsRouter = {
     .input(z.object({ commentId: z.string() }))
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const userId = context.session.user.id;

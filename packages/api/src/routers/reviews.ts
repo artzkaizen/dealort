@@ -1,5 +1,6 @@
 import { db } from "@dealort/db";
 import { organization, review, user } from "@dealort/db/schema";
+import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq, type SQL, sql } from "drizzle-orm";
 import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
@@ -68,7 +69,7 @@ export const reviewsRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       // Check if user already reviewed this organization
@@ -80,7 +81,9 @@ export const reviewsRouter = {
       });
 
       if (existingReview) {
-        throw new Error("You have already reviewed this product");
+        throw new ORPCError("CONFLICT", {
+          message: "You have already reviewed this product",
+        });
       }
 
       const id = crypto.randomUUID();
@@ -113,7 +116,7 @@ export const reviewsRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const existingReview = await db.query.review.findFirst({
@@ -124,7 +127,9 @@ export const reviewsRouter = {
       });
 
       if (!existingReview) {
-        throw new Error("Review not found or unauthorized");
+        throw new ORPCError("NOT_FOUND", {
+          message: "Review not found or unauthorized",
+        });
       }
 
       await db
@@ -149,7 +154,7 @@ export const reviewsRouter = {
     .input(z.object({ id: z.string() }))
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const existingReview = await db.query.review.findFirst({
@@ -160,7 +165,9 @@ export const reviewsRouter = {
       });
 
       if (!existingReview) {
-        throw new Error("Review not found or unauthorized");
+        throw new ORPCError("NOT_FOUND", {
+          message: "Review not found or unauthorized",
+        });
       }
 
       await db.delete(review).where(eq(review.id, input.id));

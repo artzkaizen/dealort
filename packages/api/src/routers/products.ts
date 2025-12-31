@@ -9,6 +9,7 @@ import {
   review,
 } from "@dealort/db/schema";
 import { apiLogger } from "@dealort/utils/logger";
+import { ORPCError } from "@orpc/server";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
@@ -219,7 +220,7 @@ export const productsRouter = {
         });
 
         if (!org) {
-          throw new Error("Product not found");
+          throw new ORPCError("NOT_FOUND", { message: "Product not found." });
         }
 
         // Fetch stats and user interaction state in parallel
@@ -286,7 +287,7 @@ export const productsRouter = {
     .input(z.object({ organizationId: z.string() }))
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const userId = context.session.user.id;
@@ -343,7 +344,7 @@ export const productsRouter = {
     .input(z.object({ organizationId: z.string() }))
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const userId = context.session.user.id;
@@ -392,7 +393,7 @@ export const productsRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       // Ensure the current user is a member (preferably owner) of the organization
@@ -404,7 +405,9 @@ export const productsRouter = {
       });
 
       if (!membership || membership.role !== "owner") {
-        throw new Error("You are not allowed to update this organization");
+        throw new ORPCError("FORBIDDEN", {
+          message: "You are not allowed to update this organization",
+        });
       }
 
       // Check if reference record already exists

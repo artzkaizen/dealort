@@ -1,5 +1,6 @@
 import { db } from "@dealort/db";
 import { report } from "@dealort/db/schema";
+import { ORPCError } from "@orpc/server";
 import * as z from "zod/v4";
 import { protectedProcedure } from "../index";
 
@@ -18,7 +19,7 @@ export const reportsRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       const id = crypto.randomUUID();
