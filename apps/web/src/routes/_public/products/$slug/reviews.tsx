@@ -4,9 +4,16 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { Edit, Flag, Loader2, MoreVertical, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Flag,
+  Loader2,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { ReportDialog } from "@/components/report-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -251,6 +258,13 @@ function ReviewsPage() {
   return (
     <main className="container mx-auto max-w-6xl px-4 py-8">
       {/* Header */}
+
+      <Button asChild className="mt-4 mb-6" variant="outline">
+        <Link params={{ slug }} to="/products/$slug">
+          <ArrowLeft /> Back
+        </Link>
+      </Button>
+
       <div className="mb-8">
         <div className="flex items-center gap-4">
           {product.logo && (

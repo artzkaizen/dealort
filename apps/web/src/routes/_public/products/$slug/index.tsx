@@ -28,6 +28,7 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { ReplyFormDialog } from "@/components/reply-form-dialog";
 import { ReportDialog } from "@/components/report-dialog";
+import { ActionButton } from "@/components/ui/action-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -693,13 +694,12 @@ function ProductDetailPage() {
               comment={comment}
               currentUserId={session?.user?.id}
               key={comment.id}
-              onDelete={(id) => {
-                // biome-ignore lint/suspicious/noAlert: User confirmation required before deletion
-                const confirmed = window.confirm(
-                  "Are you sure you want to delete this comment?"
-                );
-                if (confirmed) {
-                  deleteCommentMutation.mutate({ id });
+              onDelete={async (id) => {
+                try {
+                  await deleteCommentMutation.mutateAsync({ id });
+                  return { error: false };
+                } catch {
+                  return { error: true, message: "Failed to delete comment" };
                 }
               }}
               onEdit={(id, content) => {
@@ -878,7 +878,7 @@ interface CommentItemProps {
   currentUserId?: string;
   onReply: (id: string, username: string, name?: string) => void;
   onEdit: (id: string, content: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<{ error: boolean; message?: string }>;
   onReport: (id: string) => void;
   onLike: (id: string) => void;
   depth?: number;
@@ -902,16 +902,6 @@ function CommentItem({
   const [showReplies, setShowReplies] = useState(true);
   // All replies have the same indentation regardless of depth
   const paddingLeft = depth > 0 ? "ml-12" : "";
-
-  const handleDelete = () => {
-    // biome-ignore lint/suspicious/noAlert: User confirmation required before deletion
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this comment?"
-    );
-    if (confirmed) {
-      onDelete(comment.id);
-    }
-  };
 
   const handleToggleReplies = () => {
     setShowReplies(!showReplies);
@@ -974,15 +964,17 @@ function CommentItem({
                           <Edit className="mr-2 size-4" />
                           Edit
                         </Button>
-                        <Button
+                        <ActionButton
+                          action={() => onDelete(comment.id)}
+                          areYouSureDescription="This will permanently delete your comment."
                           className="w-full justify-start text-destructive"
-                          onClick={handleDelete}
+                          requireAreYouSure
                           size="sm"
                           variant="ghost"
                         >
                           <Trash2 className="mr-2 size-4" />
                           Delete
-                        </Button>
+                        </ActionButton>
                       </>
                     )}
                   </div>
