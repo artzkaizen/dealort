@@ -22,7 +22,7 @@ export function SecurityWarningEmail({
 }: SecurityWarningEmailProps) {
   return (
     <EmailLayout
-      headerGradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+      headerGradient="#f59e0b"
       preview="We detected a new login to your account"
       title="🔒 Security Alert"
     >

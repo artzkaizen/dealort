@@ -18,7 +18,7 @@ export function DeleteVerificationEmail({
 }: DeleteVerificationEmailProps) {
   return (
     <EmailLayout
-      headerGradient="linear-gradient(135deg, #a30000 0%, #7f1d1d 100%)"
+      headerGradient="#dc2626"
       preview="Confirm your account deletion request"
       title="Confirm Account Deletion"
     >

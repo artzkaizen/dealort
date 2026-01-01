@@ -11,6 +11,7 @@ export function WaitlistConfirmationEmail({
 }: WaitlistConfirmationEmailProps) {
   return (
     <EmailLayout
+      headerGradient="#28a745"
       preview="Thank you for joining the Dealort waitlist!"
       title="Thank you for joining the waitlist"
     >

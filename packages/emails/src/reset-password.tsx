@@ -18,7 +18,6 @@ export function ResetPasswordEmail({
 }: ResetPasswordEmailProps) {
   return (
     <EmailLayout
-      headerGradient="linear-gradient(135deg, #28a745 0%, #1e7e34 100%)"
       preview="Reset your Dealort password"
       title="Reset Your Password"
     >
@@ -27,9 +26,7 @@ export function ResetPasswordEmail({
         Please reset your password by clicking the button below:
       </EmailText>
       <div style={{ textAlign: "center", margin: "30px 0" }}>
-        <EmailButton href={verificationLink} variant="success">
-          Reset Password
-        </EmailButton>
+        <EmailButton href={verificationLink}>Reset Password</EmailButton>
       </div>
       <EmailText muted small>
         If you didn't request this reset, please ignore this email.

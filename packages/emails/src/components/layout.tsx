@@ -20,7 +20,7 @@ interface EmailLayoutProps {
 export function EmailLayout({
   preview,
   title,
-  headerGradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+  headerGradient = "#000000",
   children,
 }: EmailLayoutProps) {
   return (
@@ -49,7 +49,7 @@ export function EmailButton({
   variant?: "primary" | "danger" | "success";
 }) {
   const colors = {
-    primary: "#667eea",
+    primary: "#000000",
     danger: "#dc2626",
     success: "#28a745",
   };
