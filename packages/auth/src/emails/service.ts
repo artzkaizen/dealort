@@ -1,13 +1,15 @@
+import {
+  DeleteVerificationEmail,
+  InvitationEmail,
+  ResetPasswordEmail,
+  SecurityWarningEmail,
+  VerificationEmail,
+  WaitlistConfirmationEmail,
+  WelcomeEmail,
+} from "@dealort/emails";
 import { env } from "@dealort/utils/env";
 import { emailLogger } from "@dealort/utils/logger";
 import { Resend } from "resend";
-import { DeleteVerificationEmail } from "./delete-verification";
-import { InvitationEmail } from "./invitation";
-import { ResetPasswordEmail } from "./reset-password";
-import { SecurityWarningEmail } from "./security-warning";
-import { VerificationEmail } from "./verification";
-import { WaitlistConfirmationEmail } from "./waitlist-confirmation";
-import { WelcomeEmail } from "./welcome";
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -24,7 +26,8 @@ export async function sendWelcomeEmail({
     throw new Error("RESEND_API_KEY is not set");
   }
 
-  const email = WelcomeEmail({ name });
+  const dashboardUrl = `${env.CORS_ORIGIN}/dashboard`;
+  const email = await WelcomeEmail.render({ name, dashboardUrl });
   const result = await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,
@@ -55,12 +58,14 @@ export async function sendSecurityWarningEmail({
   location?: string;
   timestamp: string;
 }) {
-  const email = SecurityWarningEmail({
+  const securitySettingsUrl = `${env.CORS_ORIGIN}/dashboard/settings/security`;
+  const email = await SecurityWarningEmail.render({
     name,
     ipAddress,
     device,
     location,
     timestamp,
+    securitySettingsUrl,
   });
   return await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
@@ -80,7 +85,7 @@ export async function sendVerificationEmail({
   name: string;
   verificationLink: string;
 }) {
-  const email = VerificationEmail({ name, verificationLink });
+  const email = await VerificationEmail.render({ name, verificationLink });
   return await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,
@@ -99,7 +104,10 @@ export async function sendDeleteAccountVerificationEmail({
   name: string;
   verificationLink: string;
 }) {
-  const email = DeleteVerificationEmail({ name, verificationLink });
+  const email = await DeleteVerificationEmail.render({
+    name,
+    verificationLink,
+  });
   return await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,
@@ -118,7 +126,7 @@ export async function sendResetPasswordEmail({
   name: string;
   verificationLink: string;
 }) {
-  const email = ResetPasswordEmail({ name, verificationLink });
+  const email = await ResetPasswordEmail.render({ name, verificationLink });
   return await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,
@@ -150,7 +158,7 @@ export async function sendInvitationEmail({
     throw new Error("RESEND_API_KEY is not set");
   }
 
-  const email = InvitationEmail({
+  const email = await InvitationEmail.render({
     invitationUrl,
     organizationName,
     invitedBy,
@@ -178,7 +186,7 @@ export async function sendWaitlistConfirmationEmail({
   to: string;
   name: string;
 }) {
-  const email = WaitlistConfirmationEmail({ name });
+  const email = await WaitlistConfirmationEmail.render({ name });
   return await resend.emails.send({
     from: env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,

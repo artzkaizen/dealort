@@ -38,7 +38,8 @@
     "db:studio": "turbo -F @dealort/db db:studio",
     "db:generate": "turbo -F @dealort/db db:generate",
     "db:migrate": "turbo -F @dealort/db db:migrate",
-    "auth:generate": "npx @better-auth/cli@latest generate --config ./packages/auth/src/index.ts --output ./packages/db/src/schema/auth.ts --yes"
+    "auth:generate": "npx @better-auth/cli@latest generate --config ./packages/auth/src/index.ts --output ./packages/db/src/schema/auth.ts --yes",
+    "dev:email": "turbo -F @dealort/emails dev"
   },
   "dependencies": {
     "@arcjet/protocol": "1.0.0-beta.15",
