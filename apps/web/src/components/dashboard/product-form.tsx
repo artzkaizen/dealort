@@ -1237,7 +1237,7 @@ export function ProductForm({
                           <FormControl>
                             <Button
                               className={cn(
-                                "w-full pl-3 text-left font-normal",
+                                "w-full py-8 pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
                               variant="outline"
@@ -1257,14 +1257,18 @@ export function ProductForm({
                             disabled={(date) =>
                               date?.getTime() < new Date("1900-01-01").getTime()
                             }
+                            endMonth={
+                              new Date(new Date().getFullYear() + 10, 11)
+                            }
                             mode="single"
                             onSelect={field.onChange}
                             selected={field.value}
+                            startMonth={new Date(1900, 0)}
                           />
                         </PopoverContent>
                       </Popover>
                       <FormDescription>
-                        The date when your product was or will be released.
+                        The date when your product was or will be launched.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
