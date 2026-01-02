@@ -1253,7 +1253,7 @@ export function ProductForm({
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-auto p-0">
                           <Calendar
-                            captionLayout="dropdown-years"
+                            captionLayout="dropdown"
                             disabled={(date) =>
                               date?.getTime() < new Date("1900-01-01").getTime()
                             }
