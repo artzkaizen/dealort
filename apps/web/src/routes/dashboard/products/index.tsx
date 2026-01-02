@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import {
   filterNonNullOrganizations,
@@ -128,8 +129,8 @@ function ProductCard({ organization }: ProductCardProps) {
   const isListed = isOrganizationListed(organization);
 
   return (
-    <Card className="gap-1 p-0">
-      <CardHeader className="flex flex-row gap-2 px-2 py-2">
+    <Card className="h-full gap-1 p-0">
+      <CardHeader className="mb-auto flex flex-row gap-2 px-2 py-2">
         <Avatar className="size-10">
           <AvatarImage src={logo ?? ""} />
           <AvatarFallback>{organization.name?.charAt(0) ?? ""}</AvatarFallback>
@@ -151,11 +152,12 @@ function ProductCard({ organization }: ProductCardProps) {
               {isListed ? "Listed" : "Not Listed"}
             </Badge>
           </div>
+
           <p className="text-muted-foreground text-xs">{tagline}</p>
         </div>
       </CardHeader>
 
-      <CardContent className="flex flex-wrap gap-1 px-2 py-0">
+      <CardContent className="mb-auto flex flex-wrap gap-1 px-2 py-0 pb-2">
         <div className="flex flex-wrap gap-1">
           {categories.slice(0, 3).map((category) => (
             <Badge key={category} variant="secondary">
@@ -168,7 +170,9 @@ function ProductCard({ organization }: ProductCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-wrap items-end justify-between gap-2 border-t px-2 pt-0 pb-2">
+      <Separator />
+
+      <CardFooter className="flex flex-wrap items-end justify-between gap-2 px-2 pt-0 pb-2">
         <div className="item-start flex flex-col gap-1">
           {releaseDate && (
             <p className="flex items-center gap-1 text-muted-foreground text-xs">

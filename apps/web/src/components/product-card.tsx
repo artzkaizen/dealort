@@ -76,6 +76,7 @@ interface ProductCardRateAndReviewProps
   rating: number;
   reviewsCount: number;
 }
+
 export function ProductCardRateAndReview({
   className,
   rating,

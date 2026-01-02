@@ -40,7 +40,6 @@ export function LoginForm({
   callbackURL,
   newUserCallbackURL,
 }: LoginFormProps) {
-  const { refetch } = authClient.useSession();
   const router = useRouter();
 
   const defaultCallbackURL =
@@ -49,30 +48,58 @@ export function LoginForm({
     newUserCallbackURL || `${window.location.origin}/dashboard/settings`;
 
   async function requestGoogleAuth() {
-    return await authClient.signIn.social({
-      provider: "google",
-      callbackURL: defaultCallbackURL,
-      newUserCallbackURL: defaultNewUserCallbackURL,
-    });
+    return await authClient.signIn.social(
+      {
+        provider: "google",
+        callbackURL: defaultCallbackURL,
+        newUserCallbackURL: defaultNewUserCallbackURL,
+      },
+      {
+        onSuccess: () => {
+          onLoginSuccess?.();
+        },
+        onError: (error) => {
+          toast.error(
+            error.error.message || error.error.statusText || "Failed to login"
+          );
+        },
+      }
+    );
   }
 
   async function requestGithubAuth() {
-    return await authClient.signIn.social({
-      provider: "github",
-      callbackURL: defaultCallbackURL,
-      newUserCallbackURL: defaultNewUserCallbackURL,
-    });
+    return await authClient.signIn.social(
+      {
+        provider: "github",
+        callbackURL: defaultCallbackURL,
+        newUserCallbackURL: defaultNewUserCallbackURL,
+      },
+      {
+        onSuccess: () => {
+          onLoginSuccess?.();
+        },
+        onError: (error) => {
+          toast.error(
+            error.error.message || error.error.statusText || "Failed to login"
+          );
+        },
+      }
+    );
   }
 
   async function requestPasskeyAuth() {
     return await authClient.signIn.passkey(undefined, {
       onError: (error) => {
-        toast.error(error.error.message || "Failed to request passkey auth");
+        toast.error(
+          error.error.message ||
+            error.error.statusText ||
+            "Failed to request passkey auth"
+        );
       },
       onSuccess: () => {
         toast.success("Passkey auth requested successfully");
         router.invalidate();
-        refetch();
+        router.navigate({ to: defaultCallbackURL });
         onLoginSuccess?.();
       },
     });

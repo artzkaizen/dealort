@@ -557,10 +557,7 @@ export const productsRouter = {
       }
 
       if (input.sortBy === "recent_launch") {
-        // Recent launch: release date before now, closest to now
-        filteredOrgs = filteredOrgs.filter(
-          (org) => org.releaseDate && org.releaseDate <= now
-        );
+        // Recent launch: products with release dates, sorted by releaseDate descending
         filteredOrgs.sort(
           (a, b) =>
             (b.releaseDate?.getTime() ?? 0) - (a.releaseDate?.getTime() ?? 0)

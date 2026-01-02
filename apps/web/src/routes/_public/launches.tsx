@@ -419,7 +419,11 @@ function RouteComponent() {
             )}
 
             {recentProducts?.map((product: RecentProductsResponse) => (
-              <ProductCard className="rounded-lg" key={product.id}>
+              <ProductCard
+                className="rounded-lg"
+                key={product.id}
+                productSlug={product.slug}
+              >
                 <div className="flex justify-between gap-4">
                   <div className="flex items-start gap-1">
                     <ProductCardLogo
@@ -430,7 +434,6 @@ function RouteComponent() {
                       <ProductCardDetails
                         className="[&>a]:text-xs [&>p]:text-[10px]"
                         name={product.name}
-                        slug={product.slug}
                         tagline={product.tagline ?? ""}
                       />
                       <ProductCardTimeAndDuration
