@@ -20,5 +20,5 @@ function RouteComponent() {
     });
   }, [navigate]);
 
-  return <LoginForm callbackURL="/dashboard" showCarousel={true}   />;
+  return <LoginForm callbackURL="/dashboard" showCarousel={true} />;
 }

@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { motion } from "motion/react";
 import { toast } from "sonner";
 import {
   ProductForm,
@@ -150,12 +151,61 @@ function RouteComponent() {
   }
 
   return (
-    <main className="grid min-h-screen gap-0">
+    <main className="relative h-fit gap-0">
       <section className="min-h-screen">
-        <div className="flex flex-col gap-2 px-2 py-3">
+        <div className="z-5! flex flex-col gap-2 px-2 py-3">
           <ProductForm mode="new" onSubmit={handleSubmit} />
         </div>
       </section>
+
+      <aside
+        aria-hidden="true"
+        className="max-md:hidden! pointer-events-none absolute top-0 right-0 z-0 h-full w-[40%] opacity-70"
+        style={{
+          inset: "0 0 0 auto",
+          height: "100%", // Fill the height of the containing element
+          minHeight: 0, // Allow shrinking
+          maxHeight: "100%",
+        }}
+      >
+        <motion.div
+          animate={{
+            backgroundPosition: ["top left", "bottom left"],
+          }}
+          className="h-full w-full"
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            height: "100%", // Full height to parent
+          }}
+          transition={{
+            repeat: Number.POSITIVE_INFINITY,
+            duration: 10,
+            ease: "linear",
+          }}
+        >
+          <div
+            className={
+              "absolute inset-0 grid h-full w-full grid-cols-6 grid-rows-8"
+            }
+            style={{
+              height: "100%",
+              width: "100%",
+            }}
+          >
+            {Array.from({ length: 6 * 8 }).map((_, idx) => {
+              const row = Math.floor(idx / 12);
+              const col = idx % 12;
+              return (
+                <div
+                  className="border border-secondary/70"
+                  key={`cell-${col}-${row}`}
+                />
+              );
+            })}
+          </div>
+        </motion.div>
+      </aside>
     </main>
   );
 }
