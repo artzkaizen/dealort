@@ -19,7 +19,7 @@ export function ProductCard({
   return (
     <Link
       className={cn(
-        "group flex flex-col overflow-hidden rounded-sm border border-border bg-card p-3 transition-all hover:border-primary/60",
+        "group flex flex-col overflow-hidden rounded-sm border border-border bg-card p-3 transition-all hover:border-primary/40",
         className
       )}
       to={`/products/${encodeURIComponent(productSlug)}`}
@@ -60,9 +60,7 @@ export function ProductCardDetails({
 }: ProductCardDetailsProps) {
   return (
     <div className={cn("flex flex-col gap-px", className)} {...props}>
-      <h3
-        className="group flex items-baseline gap-1 font-semibold max-sm:text-sm [&>svg]:size-3"
-      >
+      <h3 className="group flex items-baseline gap-0.5 font-semibold capitalize max-sm:text-sm [&>svg]:size-3">
         {name}
         <ExternalLinkIcon className="opacity-0 transition-opacity group-hover:opacity-100" />
       </h3>
