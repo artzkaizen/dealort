@@ -10,16 +10,23 @@ import { Tooltip, TooltipTrigger } from "./ui/tooltip";
 
 export function ProductCard({
   className,
+  children,
+  productSlug,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: React.HTMLAttributes<HTMLAnchorElement> & {
+  productSlug: string;
+}) {
   return (
-    <div
+    <Link
       className={cn(
         "group flex flex-col overflow-hidden rounded-sm border border-border bg-card p-3 transition-all hover:border-primary/60",
         className
       )}
+      to={`/products/${encodeURIComponent(productSlug)}`}
       {...props}
-    />
+    >
+      {children}
+    </Link>
   );
 }
 
@@ -44,25 +51,21 @@ export function ProductCardLogo({
 interface ProductCardDetailsProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
   tagline: string;
-  slug?: string;
 }
 export function ProductCardDetails({
   className,
   name,
   tagline,
-  slug,
   ...props
 }: ProductCardDetailsProps) {
-  const productSlug = slug ?? name.toLowerCase();
   return (
     <div className={cn("flex flex-col gap-px", className)} {...props}>
-      <Link
-        className="group flex font-semibold hover:text-chart-3 hover:underline max-sm:text-sm [&>svg]:size-3"
-        to={`/products/${encodeURIComponent(productSlug)}`}
+      <h3
+        className="group flex items-baseline gap-1 font-semibold max-sm:text-sm [&>svg]:size-3"
       >
         {name}
         <ExternalLinkIcon className="opacity-0 transition-opacity group-hover:opacity-100" />
-      </Link>
+      </h3>
       <p className="truncate text-muted-foreground text-xs sm:text-sm">
         {tagline}
       </p>

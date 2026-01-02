@@ -24,7 +24,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ReplyFormDialog } from "@/components/reply-form-dialog";
 import { ReportDialog } from "@/components/report-dialog";
@@ -873,6 +873,33 @@ interface CommentData {
   replies?: CommentData[];
 }
 
+// Flattened reply structure for display
+interface FlattenedReply {
+  comment: CommentData;
+  replyToUsername: string | null;
+}
+
+// Helper function to flatten nested replies into a single-level array
+function flattenReplies(
+  replies: CommentData[] | undefined,
+  parentUser: { username: string | null } | null
+): FlattenedReply[] {
+  if (!replies) return [];
+
+  const result: FlattenedReply[] = [];
+
+  for (const reply of replies) {
+    result.push({
+      comment: reply,
+      replyToUsername: parentUser?.username ?? null,
+    });
+    // Recursively flatten, passing current reply's user as parent
+    result.push(...flattenReplies(reply.replies, reply.user));
+  }
+
+  return result;
+}
+
 interface CommentItemProps {
   comment: CommentData;
   currentUserId?: string;
@@ -881,10 +908,11 @@ interface CommentItemProps {
   onDelete: (id: string) => Promise<{ error: boolean; message?: string }>;
   onReport: (id: string) => void;
   onLike: (id: string) => void;
-  depth?: number;
-  parentUserName?: string;
-  parentUsername?: string;
+  replyToUsername?: string | null;
+  isReply?: boolean;
 }
+
+const REPLIES_PER_PAGE = 5;
 
 function CommentItem({
   comment,
@@ -894,21 +922,30 @@ function CommentItem({
   onDelete,
   onReport,
   onLike,
-  depth = 0,
-  parentUserName,
+  replyToUsername,
+  isReply = false,
 }: CommentItemProps) {
   const isOwner = currentUserId === comment.user?.id;
-  const hasReplies = comment.replies && comment.replies.length > 0;
+  const hasReplies = !isReply && comment.replies && comment.replies.length > 0;
   const [showReplies, setShowReplies] = useState(true);
-  // All replies have the same indentation regardless of depth
-  const paddingLeft = depth > 0 ? "ml-12" : "";
+  const [visibleRepliesCount, setVisibleRepliesCount] =
+    useState(REPLIES_PER_PAGE);
+
+  // Flatten all nested replies into a single-level array
+  const flattenedReplies = useMemo(
+    () => flattenReplies(comment.replies, comment.user),
+    [comment.replies, comment.user]
+  );
+  const visibleReplies = flattenedReplies.slice(0, visibleRepliesCount);
+  const hasMoreReplies = flattenedReplies.length > visibleRepliesCount;
+  const remainingCount = flattenedReplies.length - visibleRepliesCount;
 
   const handleToggleReplies = () => {
     setShowReplies(!showReplies);
   };
 
   return (
-    <div className={`space-y-4 ${paddingLeft}`}>
+    <div className="space-y-4">
       <div className="flex gap-3">
         <Avatar>
           <AvatarImage
@@ -921,16 +958,12 @@ function CommentItem({
         </Avatar>
         <div className="flex-1">
           <div className="flex items-start justify-between">
-            <div className="flex flex-col">
-              {parentUserName ? (
-                <>
-                  <span className="font-medium">{comment.user?.name}</span>
-                  <span className="text-muted-foreground text-sm">
-                    replying to {parentUserName}
-                  </span>
-                </>
-              ) : (
-                <span className="font-medium">{comment.user?.name}</span>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">{comment.user?.name}</span>
+              {replyToUsername && (
+                <span className="text-muted-foreground text-sm">
+                  @{replyToUsername}
+                </span>
               )}
             </div>
             {currentUserId && (
@@ -1024,7 +1057,7 @@ function CommentItem({
                 ) : (
                   <>
                     <ChevronDown className="mr-1 size-4" />
-                    Show replies ({comment.replies?.length || 0})
+                    Show replies ({flattenedReplies.length})
                   </>
                 )}
               </Button>
@@ -1033,24 +1066,34 @@ function CommentItem({
         </div>
       </div>
 
-      {/* Recursively render nested replies */}
+      {/* Render flattened replies at the same level */}
       {hasReplies && showReplies && (
-        <div className="space-y-4 border-l-2 pl-4">
-          {comment.replies?.map((reply) => (
+        <div className="ml-12 space-y-4 border-l-2 pl-4">
+          {visibleReplies.map((flatReply) => (
             <CommentItem
-              comment={reply}
+              comment={flatReply.comment}
               currentUserId={currentUserId}
-              depth={depth + 1}
-              key={reply.id}
+              isReply
+              key={flatReply.comment.id}
               onDelete={onDelete}
               onEdit={onEdit}
               onLike={onLike}
               onReply={onReply}
               onReport={onReport}
-              parentUserName={comment.user?.name || undefined}
-              parentUsername={comment.user?.username || undefined}
+              replyToUsername={flatReply.replyToUsername}
             />
           ))}
+          {hasMoreReplies && (
+            <Button
+              className="h-auto p-0"
+              onClick={() =>
+                setVisibleRepliesCount((prev) => prev + REPLIES_PER_PAGE)
+              }
+              variant="link"
+            >
+              View more replies ({remainingCount})
+            </Button>
+          )}
         </div>
       )}
     </div>

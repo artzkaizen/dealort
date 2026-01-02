@@ -341,7 +341,11 @@ function RouteComponent() {
             )}
 
             {allProducts.map((product) => (
-              <ProductCard className="rounded-lg" key={product.id}>
+              <ProductCard
+                className="rounded-lg"
+                key={product.id}
+                productSlug={product.slug}
+              >
                 <div className="flex justify-between gap-4 max-sm:flex-wrap">
                   <div className="flex items-start gap-1">
                     <ProductCardLogo
@@ -351,7 +355,6 @@ function RouteComponent() {
                     <div className="flex flex-col gap-px">
                       <ProductCardDetails
                         name={product.name}
-                        slug={product.slug}
                         tagline={product.tagline ?? ""}
                       />
                       <ProductCardRateAndReview

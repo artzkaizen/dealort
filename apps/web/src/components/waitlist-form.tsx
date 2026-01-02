@@ -138,7 +138,7 @@ export function WaitlistForm({ afterSubmit }: WaitlistFormProps) {
         </div>
 
         <Button
-          className="sm: ml-auto w-full py-3 sm:w-fit sm:px-16"
+          className="sm: ml-auto w-full py-3 sm:px-16"
           disabled={waitlistMutation.isPending}
           type="submit"
         >
