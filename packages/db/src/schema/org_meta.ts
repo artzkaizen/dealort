@@ -1,8 +1,8 @@
-import { relations, sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 
-export const organizationReference = sqliteTable("organization_reference", {
+export const organizationReference = pgTable("organization_reference", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id")
     .notNull()
@@ -12,9 +12,7 @@ export const organizationReference = sqliteTable("organization_reference", {
   xUrl: text("x_url").notNull(),
   linkedinUrl: text("linkedin_url"),
   sourceCodeUrl: text("source_code_url"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 /**

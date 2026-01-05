@@ -12,7 +12,7 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 - **oRPC** - End-to-end type-safe APIs with OpenAPI integration
 - **Bun** - Runtime environment
 - **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
+- **PostgreSQL** - Database engine (Docker for development)
 - **Authentication** - Better-Auth
 - **Turborepo** - Optimized monorepo build system
 
@@ -26,21 +26,45 @@ bun install
 
 ## Database Setup
 
-This project uses SQLite with Drizzle ORM.
+This project uses PostgreSQL with Drizzle ORM.
 
-1. Start the local SQLite database:
+1. Start the PostgreSQL database using Docker Compose:
 
 ```bash
-cd apps/server && bun run db:local
+docker-compose up -d postgres
 ```
 
-2. Update your `.env` file in the `apps/server` directory with the appropriate connection details if needed.
+Or use the convenience script:
+
+```bash
+bun run db:local
+```
+
+2. Update your `.env` file with the PostgreSQL connection string:
+
+```bash
+DATABASE_URL="postgresql://postgres:password@localhost:5432/dealort"
+```
 
 3. Apply the schema to your database:
 
 ```bash
 bun run db:push
 ```
+
+### Migrating Data from SQLite (if applicable)
+
+If you have existing data in SQLite that needs to be migrated:
+
+1. Ensure PostgreSQL is running (step 1 above)
+2. Set `OLD_DATABASE_URL` in your `.env` file to point to your SQLite database:
+   ```bash
+   OLD_DATABASE_URL="file:/path/to/your/local.db"
+   ```
+3. Run the migration script:
+   ```bash
+   bun scripts/migrate-sqlite-to-postgres.ts
+   ```
 
 Then, run the development server:
 
@@ -73,4 +97,5 @@ dealort/
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run db:push`: Push schema changes to database
 - `bun run db:studio`: Open database studio UI
-- `cd apps/server && bun run db:local`: Start the local SQLite database
+- `bun run db:local`: Start the PostgreSQL database (Docker Compose)
+- `docker-compose down`: Stop the PostgreSQL database

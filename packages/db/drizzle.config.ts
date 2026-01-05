@@ -8,7 +8,7 @@ dotenv.config({
 export default defineConfig({
   schema: "./src/schema/**/*.ts",
   out: "./src/migrations",
-  dialect: "turso",
+  dialect: "postgresql",
   dbCredentials: {
     url: process.env.DATABASE_URL || "",
   },

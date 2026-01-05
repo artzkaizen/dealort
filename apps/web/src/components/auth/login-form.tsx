@@ -97,7 +97,7 @@ export function LoginForm({
         );
       },
       onSuccess: () => {
-        toast.success("Passkey auth requested successfully");
+        toast.success("Sign in successful");
         router.invalidate();
         router.navigate({ to: defaultCallbackURL });
         onLoginSuccess?.();

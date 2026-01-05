@@ -13,6 +13,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const appearanceOptions = [
@@ -92,8 +93,8 @@ function RouteComponent() {
 
                   <Checkbox
                     aria-label={`Select ${option.label} theme`}
-                    checked={user?.theme === option.value}
-                    className="rounded-full border-2 border-primary"
+                    checked={(user as User)?.theme === option.value}
+                    className="cursor-pointer rounded-full border-2 border-primary"
                     onCheckedChange={(checked) => {
                       if (checked) {
                         handleThemeChange(option.value);

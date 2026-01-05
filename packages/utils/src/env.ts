@@ -12,7 +12,10 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     CORS_ORIGIN: z.string().min(1),
-    DATABASE_URL: z.string().startsWith("file:").min(1), // Use startsWith to validate the prefix
+    DATABASE_URL: z
+      .string()
+      .regex(/^(postgresql|postgres):\/\//)
+      .min(1), // PostgreSQL connection string
     ARCJET_KEY: z
       .string()
       .optional()

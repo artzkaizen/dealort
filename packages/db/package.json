@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "db:local": "turso dev --db-file local.db",
+    "db:local": "docker-compose up -d postgres",
     "db:push": "bun run --env-file ../../.env drizzle-kit push",
     "db:studio": "bun run --env-file ../../.env drizzle-kit studio",
     "db:generate": "bun run --env-file ../../.env drizzle-kit generate",
@@ -18,7 +18,8 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.2",
-    "tsdown": "catalog:"
+    "tsdown": "catalog:",
+    "@libsql/client": "^0.14.0"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -26,7 +27,7 @@
   "dependencies": {
     "@dealort/utils": "workspace:*",
     "drizzle-orm": "^0.44.2",
-    "@libsql/client": "^0.14.0",
+    "postgres": "^3.4.5",
     "dotenv": "catalog:",
     "zod": "catalog:"
   }

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "../ui/action-button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -69,17 +70,6 @@ function UserProfile() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
-
-  // Handle logout action
-  const handleLogout = () => {
-    authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          navigate({ to: "/" });
-        },
-      },
-    });
-  };
 
   if (isPending) {
     return (
@@ -136,7 +126,7 @@ function UserProfile() {
           <ChevronsUpDownIcon className="size-4" />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="size-fit p-2" side="right">
+      <PopoverContent className="size-fit p-0" side="right">
         <div className="flex min-w-[120px] flex-col gap-1">
           <Button
             asChild
@@ -149,15 +139,25 @@ function UserProfile() {
               Settings
             </Link>
           </Button>
-          <Button
+          <ActionButton
+            action={async () => {
+              await authClient.signOut({
+                fetchOptions: {
+                  onSuccess: () => {
+                    navigate({ to: "/" });
+                  },
+                },
+              });
+              return { error: false };
+            }}
+            areYouSureDescription="Are you sure you want to logout?"
             className="w-full justify-start text-destructive hover:text-destructive"
-            onClick={handleLogout}
+            requireAreYouSure
             size="sm"
             variant="ghost"
           >
-            <LogOut className="mr-2 size-4" />
-            Logout
-          </Button>
+            <LogOut className="mr-2 size-4" /> Logout
+          </ActionButton>
         </div>
       </PopoverContent>
     </Popover>
@@ -216,7 +216,6 @@ function SidebarContentInner() {
                               isActive,
                           }
                         )}
-                        // @ts-expect-error - TanStack Router types are strict and some dashboard routes may not be registered yet
                         to={link.path}
                       >
                         <Icon className="size-4 shrink-0" />

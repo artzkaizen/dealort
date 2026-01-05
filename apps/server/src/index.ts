@@ -186,7 +186,7 @@ app.use("/*", async (c, next) => {
 });
 
 // Start the server
-const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000;
+const port = env.PORT ? Number.parseInt(env.PORT, 10) : 3000;
 
 export default {
   port,

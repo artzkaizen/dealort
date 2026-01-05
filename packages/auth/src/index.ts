@@ -52,7 +52,7 @@ const generateUsername = (name: string) => {
 const authConfig: BetterAuthOptions = {
   appName: "Dealort",
   database: drizzleAdapter(db, {
-    provider: "sqlite",
+    provider: "postgres",
     schema,
   }),
   trustedOrigins: [env.CORS_ORIGIN],

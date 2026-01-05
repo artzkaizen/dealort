@@ -1,12 +1,12 @@
-import { relations, sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
+import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
 
 /**
  * Review table - stores user reviews for organizations/products
  * Each review can have a rating and text content
  */
-export const review = sqliteTable(
+export const review = pgTable(
   "review",
   {
     id: text("id").primaryKey(),
@@ -19,12 +19,10 @@ export const review = sqliteTable(
     rating: integer("rating").notNull(), // Typically 1-5 stars
     title: text("title"),
     content: text("content").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -39,7 +37,7 @@ export const review = sqliteTable(
  * Comments can be top-level (parentId is null) or replies to other comments
  * Comments are associated with both a user and an organization
  */
-export const comment = sqliteTable(
+export const comment = pgTable(
   "comment",
   {
     id: text("id").primaryKey(),
@@ -51,12 +49,10 @@ export const comment = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     parentId: text("parent_id"), // null for top-level comments, ID for replies (self-referential FK handled via relations)
     content: text("content").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -81,7 +77,7 @@ export const reviewRelations = relations(review, ({ one }) => ({
 /**
  * Comment like table - tracks likes on comments
  */
-export const commentLike = sqliteTable(
+export const commentLike = pgTable(
   "comment_like",
   {
     id: text("id").primaryKey(),
@@ -91,9 +87,7 @@ export const commentLike = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("commentLike_commentId_idx").on(table.commentId),
@@ -106,7 +100,7 @@ export const commentLike = sqliteTable(
 /**
  * Report table - stores reports for comments, reviews, etc.
  */
-export const report = sqliteTable(
+export const report = pgTable(
   "report",
   {
     id: text("id").primaryKey(),
@@ -118,9 +112,7 @@ export const report = sqliteTable(
     reason: text("reason").notNull(),
     description: text("description"),
     status: text("status").default("pending").notNull(), // 'pending', 'resolved', 'dismissed'
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("report_userId_idx").on(table.userId),
