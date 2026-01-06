@@ -45,10 +45,10 @@ export const appRouter = {
         throw new Error("Unauthorized");
       }
 
-      await db.$client.execute({
-        sql: "UPDATE user SET image = ?, updated_at = ? WHERE id = ?",
-        args: [input.image, new Date().toISOString(), context.session.user.id],
-      });
+      await db
+        .update(user)
+        .set({ image: input.image })
+        .where(eq(user.id, context.session.user.id));
 
       return { success: true };
     }),

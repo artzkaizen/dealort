@@ -542,10 +542,20 @@ export const productsRouter = {
     .handler(async ({ input }) => {
       const now = new Date();
 
+      console.log("input", input);
+
       // Fetch all listed products with releaseDate
       const allOrgs = await db.query.organization.findMany({
         where: and(eq(organization.isListed, true)),
       });
+
+      if (!(allOrgs && allOrgs.length)) {
+        return {
+          items: [],
+          nextCursor: null,
+          hasMore: false,
+        };
+      }
 
       // Filter by categories if provided
       let filteredOrgs = allOrgs.filter((org) => org.releaseDate !== null);

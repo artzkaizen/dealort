@@ -43,7 +43,7 @@ bun run db:local
 2. Update your `.env` file with the PostgreSQL connection string:
 
 ```bash
-DATABASE_URL="postgresql://postgres:password@localhost:5432/dealort"
+DATABASE_URL="postgresql://postgres:password@localhost:5433/dealort"
 ```
 
 3. Apply the schema to your database:

@@ -50,10 +50,7 @@ export const healthRouter = {
     // Check database connectivity
     const dbStartTime = Date.now();
     try {
-      await db.$client.execute({
-        sql: "SELECT 1",
-        args: [],
-      });
+      await db.execute(sql`SELECT 1`);
       checks.database.status = "healthy";
       checks.database.responseTime = Date.now() - dbStartTime;
     } catch (error) {
