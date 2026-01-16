@@ -1,5 +1,6 @@
 import { db } from "@dealort/db";
 import { env } from "@dealort/utils/env";
+import { sql } from "drizzle-orm";
 import { publicProcedure } from "../index";
 
 /**
@@ -32,7 +33,7 @@ export const healthRouter = {
   check: publicProcedure.handler(async (): Promise<HealthCheckResponse> => {
     const checks: HealthCheckResponse["checks"] = {
       database: {
-        status: "unhealthy",
+        status: env.DATABASE_URL ? "healthy" : "unhealthy",
       },
       services: {
         resend: {
@@ -53,7 +54,7 @@ export const healthRouter = {
       await db.execute(sql`SELECT 1`);
       checks.database.status = "healthy";
       checks.database.responseTime = Date.now() - dbStartTime;
-    } catch (error) {
+    } catch (_error) {
       checks.database.status = "unhealthy";
     }
 
@@ -68,11 +69,14 @@ export const healthRouter = {
       (checks.services.resend.status === "not_configured" ||
         checks.services.uploadthing.status === "not_configured");
 
-    const status: HealthCheckResponse["status"] = isHealthy
-      ? "healthy"
-      : isDegraded
-        ? "degraded"
-        : "unhealthy";
+    let status: HealthCheckResponse["status"];
+    if (isHealthy) {
+      status = "healthy";
+    } else if (isDegraded) {
+      status = "degraded";
+    } else {
+      status = "unhealthy";
+    }
 
     return {
       status,

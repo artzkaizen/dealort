@@ -1,75 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1764939106395,
-      "tag": "0000_smiling_whizzer",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1764941493463,
-      "tag": "0001_salty_magma",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1765022655403,
-      "tag": "0002_overjoyed_cassandra_nova",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1765055748636,
-      "tag": "0003_colorful_iron_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1765056444836,
-      "tag": "0004_serious_millenium_guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1765057041934,
-      "tag": "0005_legal_gorgon",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1765057557282,
-      "tag": "0006_shiny_shadowcat",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1765264998486,
-      "tag": "0007_black_paper_doll",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1765295939965,
-      "tag": "0008_dusty_bedlam",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1765440441612,
-      "tag": "0009_stale_triton",
+      "version": "7",
+      "when": 1768583204139,
+      "tag": "0000_fluffy_oracle",
       "breakpoints": true
     }
   ]

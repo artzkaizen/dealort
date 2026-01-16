@@ -25,6 +25,8 @@
   },
   "scripts": {
     "check": "biome check --write .",
+    "lint": "biome lint --write .",
+    "format": "biome format --write .",
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",

@@ -406,7 +406,9 @@ export function RevenueTable() {
   const { table } = useDataGrid({
     columns,
     data,
-    onDataChange: (data) => {},
+    onDataChange: (_data: RevenueRow[]) => {
+      // biome-ignore lint/suspicious/noEmptyBlock: <explanation>
+    },
     enableSearch: true,
   });
 

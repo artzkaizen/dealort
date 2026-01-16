@@ -26,9 +26,11 @@
   },
   "dependencies": {
     "@dealort/utils": "workspace:*",
-    "drizzle-orm": "^0.44.2",
-    "postgres": "^3.4.5",
+    "@neondatabase/serverless": "^1.0.2",
     "dotenv": "catalog:",
+    "drizzle-orm": "^0.44.2",
+    "pg": "^8.17.1",
+    "postgres": "^3.4.5",
     "zod": "catalog:"
   }
 }

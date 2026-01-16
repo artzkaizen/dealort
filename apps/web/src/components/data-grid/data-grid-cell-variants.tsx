@@ -49,6 +49,8 @@ import { getCellKey, getLineCount } from "@/lib/data-grid";
 import { cn } from "@/lib/utils";
 import type { CellVariantProps, FileCellData } from "@/types/data-grid";
 
+const dangerousProtocolRegex = /^(javascript|data|vbscript|file):/i;
+
 export function ShortTextCell<TData>({
   cell,
   table,
@@ -91,6 +93,7 @@ export function ShortTextCell<TData>({
   );
 
   const onWrapperKeyDown = React.useCallback(
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <explanation>
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (isEditing) {
         if (event.key === "Enter") {
@@ -461,8 +464,10 @@ function getUrlHref(urlString: string): string {
 
   const trimmed = urlString.trim();
 
+  // Define the protocol regex once at module level for performance
+
   // Reject dangerous protocols (extra safety, though our http:// prefix would neutralize them)
-  if (/^(javascript|data|vbscript|file):/i.test(trimmed)) {
+  if (dangerousProtocolRegex.test(trimmed)) {
     return "";
   }
 
@@ -994,7 +999,7 @@ export function MultiSelectCell<TData>({
         selectedValues.length > 0
       ) {
         event.preventDefault();
-        const lastValue = selectedValues[selectedValues.length - 1];
+        const lastValue = selectedValues.at(-1);
         if (lastValue) {
           removeValue(lastValue);
         }
