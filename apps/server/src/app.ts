@@ -115,8 +115,8 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
-  // biome-ignore lint/suspicious/noExplicitAny: ORPC typing issue - onError is designed to be used as interceptor
-  interceptors: [createErrorHandler("OpenAPI") as any],
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  interceptors: [createErrorHandler("OpenAPI") as unknown as any],
 });
 
 /**
@@ -124,8 +124,8 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
  * Note: Type assertion is needed due to complex router type inference
  */
 export const rpcHandler = new RPCHandler(appRouter, {
-  // biome-ignore lint/suspicious/noExplicitAny: ORPC typing issue - onError is designed to be used as interceptor
-  interceptors: [createErrorHandler("RPC") as any],
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  interceptors: [createErrorHandler("RPC") as unknown as any],
 });
 
 // Apply Arcjet protection to RPC and API routes
