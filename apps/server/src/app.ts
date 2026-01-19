@@ -16,7 +16,6 @@ import {
 import { serverLogger } from "@dealort/utils/logger";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { type Context, Hono } from "hono";
@@ -80,33 +79,39 @@ async function uploadThingAdapter(c: Context): Promise<Response> {
 app.use("/api/uploadthing/*", uploadTimeoutMiddleware, uploadThingAdapter);
 
 /**
- * Error handler for API/RPC requests
+ * Error handler interceptor for API/RPC requests
  * Logs errors and sends them to error tracking service
  */
-function createErrorHandler(handlerName: string) {
-  return onError((error: unknown) => {
-    const err = error instanceof Error ? error : new Error(String(error));
+function createErrorInterceptor(handlerName: string) {
+  return async (options: { next: () => Promise<any> }) => {
+    try {
+      return await options.next();
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
 
-    serverLogger.error(
-      {
-        error: {
-          message: err.message,
-          stack: err.stack,
-          name: err.name,
+      serverLogger.error(
+        {
+          error: {
+            message: err.message,
+            stack: err.stack,
+            name: err.name,
+          },
         },
-      },
-      `${handlerName} handler error`
-    );
+        `${handlerName} handler error`
+      );
 
-    captureException(err, {
-      handler: handlerName,
-    });
-  });
+      captureException(err, {
+        handler: handlerName,
+      });
+
+      // Re-throw to let ORPC handle the error response
+      throw err;
+    }
+  };
 }
 
 /**
  * OpenAPI handler for API documentation and reference
- * Note: Type assertion is needed due to complex router type inference
  */
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
@@ -114,15 +119,14 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
-  interceptors: [createErrorHandler("OpenAPI") as any],
+  interceptors: [createErrorInterceptor("OpenAPI")],
 });
 
 /**
  * RPC handler for client-server communication
- * Note: Type assertion is needed due to complex router type inference
  */
 export const rpcHandler = new RPCHandler(appRouter, {
-  interceptors: [createErrorHandler("RPC") as any],
+  interceptors: [createErrorInterceptor("RPC")],
 });
 
 // Apply Arcjet protection to RPC and API routes
