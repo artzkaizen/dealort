@@ -6,7 +6,7 @@ import { getTimeoutForRoute } from "./timeouts";
  */
 export function createTimeoutInterceptor() {
   return {
-    async intercept(ctx: { path?: string }, next: () => Promise<any>) {
+    intercept(ctx: { path?: string }, next: () => Promise<any>) {
       if (!ctx.path) {
         return next();
       }
@@ -22,10 +22,9 @@ export function createTimeoutInterceptor() {
           setTimeout(() => {
             const timeoutSeconds = Math.round(timeoutMs / 1000);
             reject(
-              new ORPCError(
-                "TIMEOUT",
-                `Request timeout: The operation took longer than ${timeoutSeconds} seconds to complete. Please try again or contact support if the problem persists.`
-              )
+              new ORPCError("TIMEOUT", {
+                message: `Request timeout: The operation took longer than ${timeoutSeconds} seconds to complete. Please try again or contact support if the problem persists.`,
+              })
             );
           }, timeoutMs);
         }),

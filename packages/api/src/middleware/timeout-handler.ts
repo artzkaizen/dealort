@@ -5,7 +5,7 @@ import { getTimeoutForRoute } from "./timeouts";
  * Custom error class for timeout errors
  */
 export class TimeoutError extends Error {
-  constructor(routePath: string, timeoutMs: number) {
+  constructor(_routePath: string, timeoutMs: number) {
     const timeoutSeconds = Math.round(timeoutMs / 1000);
     super(
       `Request timeout: The operation took longer than ${timeoutSeconds} seconds to complete. Please try again or contact support if the problem persists.`
@@ -24,7 +24,7 @@ export function withTimeout<T extends (...args: any[]) => Promise<any>>(
   handler: T,
   routePath: string
 ): T {
-  return (async (...args: Parameters<T>) => {
+  return ((...args: Parameters<T>) => {
     const timeoutMs = getTimeoutForRoute(routePath);
 
     return Promise.race([
@@ -36,7 +36,9 @@ export function withTimeout<T extends (...args: any[]) => Promise<any>>(
       }),
     ]).catch((error) => {
       if (error instanceof TimeoutError) {
-        throw new ORPCError("TIMEOUT", error.message);
+        throw new ORPCError("TIMEOUT", {
+          message: error.message,
+        });
       }
       throw error;
     });

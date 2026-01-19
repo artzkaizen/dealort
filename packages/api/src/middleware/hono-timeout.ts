@@ -7,7 +7,7 @@ import { TIMEOUTS } from "./timeouts";
  * @returns Hono middleware
  */
 export function createHonoTimeoutMiddleware(timeoutMs: number) {
-  return async (c: Context, next: () => Promise<void>) =>
+  return async (_c: Context, next: () => Promise<void>) =>
     Promise.race([
       next(),
       new Promise<never>((_, reject) => {
