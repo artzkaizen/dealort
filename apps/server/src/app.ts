@@ -114,7 +114,6 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
-  // biome-ignore lint/suspicious/noExplicitAny: ORPC typing issue - onError interceptor has complex generic types
   interceptors: [createErrorHandler("OpenAPI") as any],
 });
 
@@ -123,7 +122,6 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
  * Note: Type assertion is needed due to complex router type inference
  */
 export const rpcHandler = new RPCHandler(appRouter, {
-  // biome-ignore lint/suspicious/noExplicitAny: ORPC typing issue - onError interceptor has complex generic types
   interceptors: [createErrorHandler("RPC") as any],
 });
 
