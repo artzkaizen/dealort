@@ -89,6 +89,7 @@ function createErrorInterceptor(handlerName: string) {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
+      
       serverLogger.error(
         {
           error: {
