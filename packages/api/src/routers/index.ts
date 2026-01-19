@@ -1,5 +1,7 @@
 import { db } from "@dealort/db";
+import { user } from "@dealort/db/schema";
 import type { RouterClient } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import * as z from "zod/v4";
 import { protectedProcedure, publicProcedure } from "../index";
 import { analyticsRouter } from "./analytics";
