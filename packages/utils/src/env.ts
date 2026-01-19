@@ -12,6 +12,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     CORS_ORIGIN: z.string().min(1),
+    PORT: z.string().optional().default("3000"),
     DATABASE_URL: z
       .string()
       .regex(/^(postgresql|postgres):\/\//)
