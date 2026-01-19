@@ -74,6 +74,7 @@ async function uploadThingAdapter(c: Context): Promise<Response> {
   });
 }
 
+
 // UploadThing route - Skip Arcjet (UploadThing handles its own security)
 // Apply timeout middleware (5-7 minutes)
 app.use("/api/uploadthing/*", uploadTimeoutMiddleware, uploadThingAdapter);
