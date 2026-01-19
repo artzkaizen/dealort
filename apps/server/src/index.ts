@@ -1,7 +1,6 @@
 import { handle } from "hono/vercel";
 import { app } from "./app";
 
-
 // Start the server
 // const port = env.PORT ? Number.parseInt(env.PORT, 10) : 3000;
 
@@ -10,4 +9,3 @@ import { app } from "./app";
  * Vercel will pick this up automatically
  */
 export default handle(app);
-
