@@ -16,6 +16,7 @@ import {
 import { serverLogger } from "@dealort/utils/logger";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { type Context, Hono } from "hono";
@@ -78,8 +79,6 @@ async function uploadThingAdapter(c: Context): Promise<Response> {
 // Apply timeout middleware (5-7 minutes)
 app.use("/api/uploadthing/*", uploadTimeoutMiddleware, uploadThingAdapter);
 
-import { onError } from "@orpc/server";
-
 /**
  * Error handler for API/RPC requests
  * Logs errors and sends them to error tracking service
@@ -115,8 +114,8 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  interceptors: [createErrorHandler("OpenAPI") as unknown as any],
+  // biome-ignore lint/suspicious/noExplicitAny: ORPC typing issue - onError interceptor has complex generic types
+  interceptors: [createErrorHandler("OpenAPI") as any],
 });
 
 /**
@@ -124,8 +123,8 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
  * Note: Type assertion is needed due to complex router type inference
  */
 export const rpcHandler = new RPCHandler(appRouter, {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  interceptors: [createErrorHandler("RPC") as unknown as any],
+  // biome-ignore lint/suspicious/noExplicitAny: ORPC typing issue - onError interceptor has complex generic types
+  interceptors: [createErrorHandler("RPC") as any],
 });
 
 // Apply Arcjet protection to RPC and API routes
