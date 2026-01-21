@@ -1,19 +1,12 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "dist/index.js"
-    }
-  ],
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "framework": null,
+  "outputDirectory": "apps/server/dist",
   "functions": {
-    "dist/index.js": {
+    "apps/server/dist/index.js": {
+      "runtime": "nodejs20.x",
       "memory": 1024,
       "maxDuration": 60
     }
