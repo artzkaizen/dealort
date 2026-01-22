@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && turbo run build --filter=server && cd apps/server",
-  "installCommand": "cd ../.. && bun install && cd apps/server",
+  "buildCommand": "turbo run build",
+  "installCommand": "bun install",
   "outputDirectory": "dist"
 }
