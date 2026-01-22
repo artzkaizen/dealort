@@ -9,7 +9,6 @@
     "./*": {
       "default": "./src/*.ts"
     }
-    // "./env": "./dist/env.js"
   },
   "scripts": {
     "build": "bun run tsc"
