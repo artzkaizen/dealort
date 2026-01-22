@@ -1,7 +1,5 @@
 // import { env } from "@dealort/utils/env";
-import { createApp } from "./app";
-
-const { app } = createApp();
+import { app } from "./app";
 
 const port = 3000;
 
