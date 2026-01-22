@@ -1,7 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "bun run build",
-  "installCommand": "bun install",
+  "buildCommand": "cd ../.. && turbo run build --filter=server && cd apps/server",
+  "installCommand": "cd ../.. && bun install && cd apps/server",
+  "outputDirectory": "dist",
   "functions": {
     "apps/server/dist/**/*.js": {
       "memory": 1024,
