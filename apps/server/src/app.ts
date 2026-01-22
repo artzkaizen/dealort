@@ -23,9 +23,12 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 
 // Initialize error tracking on startup
+
+export function createApp() {
+
 initErrorTracking();
 
-export const app = new Hono();
+const app = new Hono();
 
 app.use(
   honoLogger((str) => {
@@ -74,7 +77,6 @@ async function uploadThingAdapter(c: Context): Promise<Response> {
   });
 }
 
-
 // UploadThing route - Skip Arcjet (UploadThing handles its own security)
 // Apply timeout middleware (5-7 minutes)
 app.use("/api/uploadthing/*", uploadTimeoutMiddleware, uploadThingAdapter);
@@ -114,7 +116,7 @@ function createErrorInterceptor(handlerName: string) {
 /**
  * OpenAPI handler for API documentation and reference
  */
-export const apiHandler = new OpenAPIHandler(appRouter, {
+ const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
       schemaConverters: [new ZodToJsonSchemaConverter()],
@@ -126,7 +128,7 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
 /**
  * RPC handler for client-server communication
  */
-export const rpcHandler = new RPCHandler(appRouter, {
+ const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [createErrorInterceptor("RPC")],
 });
 
@@ -189,3 +191,5 @@ app.use("/*", async (c, next) => {
     throw error;
   }
 });
+return { app, apiHandler, rpcHandler };
+}

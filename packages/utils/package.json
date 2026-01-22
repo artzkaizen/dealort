@@ -8,8 +8,8 @@
   "exports": {
     "./*": {
       "default": "./src/*.ts"
-    },
-    "./env": "./dist/env.js"
+    }
+    // "./env": "./dist/env.js"
   },
   "scripts": {
     "build": "bun run tsc"

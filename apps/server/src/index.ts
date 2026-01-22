@@ -1,5 +1,7 @@
 import { handle } from "hono/vercel";
-import { app } from "./app";
+import { createApp } from "./app";
+
+const { app } = createApp();
 
 // Start the server
 // const port = env.PORT ? Number.parseInt(env.PORT, 10) : 3000;
