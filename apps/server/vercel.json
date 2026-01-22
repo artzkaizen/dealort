@@ -4,7 +4,7 @@
   "installCommand": "cd ../.. && bun install && cd apps/server",
   "outputDirectory": "dist",
   "functions": {
-    "apps/server/dist/**/*.js": {
+    "./dist/**/*.js": {
       "memory": 1024,
       "maxDuration": 60
     }
