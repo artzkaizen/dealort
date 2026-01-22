@@ -1,5 +1,7 @@
 {
   "name": "@dealort/api",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -8,7 +10,12 @@
     "./*": {
       "types": "./src/*.ts",
       "default": "./src/*.ts"
-    }
+    },
+    "./context": "./dist/context.js",
+    "./middleware/arcjet": "./dist/middleware/arcjet.js",
+    "./middleware/hono-timeout": "./dist/middleware/hono-timeout.js",
+    "./routers/index": "./dist/routers/index.js",
+    "./routers/uploadthing": "./dist/routers/uploadthing.js"
   },
   "type": "module",
   "scripts": {

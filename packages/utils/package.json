@@ -1,12 +1,15 @@
 {
   "name": "@dealort/utils",
   "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "private": true,
   "type": "module",
   "exports": {
     "./*": {
       "default": "./src/*.ts"
-    }
+    },
+    "./env": "./dist/env.js"
   },
   "scripts": {
     "build": "bun run tsc"
