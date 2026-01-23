@@ -469,7 +469,9 @@ export const productsRouter = {
       if (input.categories && input.categories.length > 0) {
         filteredOrgs = allOrgs.filter((org) => {
           const orgCategories = org.category ?? [];
-          return input.categories?.some((cat) => (orgCategories as string[]).includes(cat));
+          return input.categories?.some((cat) =>
+            (orgCategories as string[]).includes(cat)
+          );
         });
       }
 
@@ -549,7 +551,7 @@ export const productsRouter = {
         where: and(eq(organization.isListed, true)),
       });
 
-      if (!(allOrgs?.length)) {
+      if (!allOrgs?.length) {
         return {
           items: [],
           nextCursor: null,
@@ -562,7 +564,9 @@ export const productsRouter = {
       if (input.categories && input.categories.length > 0) {
         filteredOrgs = filteredOrgs.filter((org) => {
           const orgCategories = org.category ?? [];
-          return input.categories?.some((cat) => (orgCategories as string[]).includes(cat));
+          return input.categories?.some((cat) =>
+            (orgCategories as string[]).includes(cat)
+          );
         });
       }
 

@@ -1,6 +1,4 @@
-import { handle } from "hono/vercel";
-import { app } from "./app";
-
+// import { handle } from "hono/vercel";
 // Start the server
 // const port = env.PORT ? Number.parseInt(env.PORT, 10) : 3000;
 
@@ -8,4 +6,6 @@ import { app } from "./app";
  * Vercel Serverless export
  * Vercel will pick this up automatically
  */
-export default handle(app);
+
+// biome-ignore lint/performance/noBarrelFile: <explanation>
+export { app as default } from "./app";
