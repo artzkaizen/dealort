@@ -9,6 +9,12 @@ export default defineConfig({
     tailwindcss(),
     tanstackRouter({
       routeToken: "layout",
+      basePath: "/",
+      routesDir: "./src/routes",
+      routeFilePattern: "**/*.{ts,tsx}",
+      routeFilePrefix: "page",
+      routeFileSuffix: "page",
+      routeFileExtension: "tsx",
     }),
     react(),
   ],
