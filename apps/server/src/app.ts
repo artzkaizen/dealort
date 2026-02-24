@@ -47,6 +47,7 @@ app.use(
       "b3",
       "referer",
       "traceparent",
+      "User-Agent",
     ],
     credentials: true,
   })
